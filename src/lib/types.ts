@@ -16,7 +16,7 @@ export interface VehicleType {
   slabs: RateSlab[];
 }
 
-export type PaymentMode = "cash" | "gpay";
+export type PaymentMode = "cash" | "online";
 
 export type SessionStatus = "parked" | "completed";
 
@@ -24,11 +24,14 @@ export interface ParkingSession {
   id: string;
   tokenCode: string;
   vehicleTypeId: string;
-  vehicleNumber?: string;
+  vehicleNumber: string;
   entryTime: string; // ISO
   exitTime?: string; // ISO
-  amountCharged?: number;
-  paymentMode?: PaymentMode;
+  amountPaidAtEntry: number;
+  paymentModeAtEntry?: PaymentMode; // set only if amountPaidAtEntry > 0
+  amountPaidAtExit?: number;
+  paymentModeAtExit?: PaymentMode;
+  totalAmount?: number; // computed total cost, set once the vehicle exits
   recordedBy: string;
   status: SessionStatus;
 }
@@ -36,8 +39,8 @@ export interface ParkingSession {
 export interface Expense {
   id: string;
   amount: number;
-  category: string;
+  title: string;
   note?: string;
-  expenseDate: string; // ISO
+  expenseDate: string; // ISO, defaults to today, editable within current month
   recordedBy: string;
 }

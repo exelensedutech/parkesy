@@ -7,7 +7,6 @@ import Typography from "@mui/material/Typography";
 import Stack from "@mui/material/Stack";
 import Fab from "@mui/material/Fab";
 import AddIcon from "@mui/icons-material/Add";
-import AppShell from "@/components/AppShell";
 import AddExpenseSheet from "@/components/AddExpenseSheet";
 import { useAppStore } from "@/lib/store";
 
@@ -15,29 +14,43 @@ export default function ExpensesPage() {
   const { expenses } = useAppStore();
   const [open, setOpen] = useState(false);
 
-  const total = expenses.reduce((sum, e) => sum + e.amount, 0);
+  const now = new Date();
+  const monthExpenses = expenses
+    .filter((e) => {
+      const d = new Date(e.expenseDate);
+      return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+    })
+    .sort((a, b) => new Date(b.expenseDate).getTime() - new Date(a.expenseDate).getTime());
+
+  const total = monthExpenses.reduce((sum, e) => sum + e.amount, 0);
+  const monthLabel = now.toLocaleDateString(undefined, { month: "long", year: "numeric" });
 
   return (
-    <AppShell>
-      <Typography variant="h6">Expenses</Typography>
+    <>
+      <Typography variant="h6">Expenses — {monthLabel}</Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-        Total recorded: ₹{total}
+        Total this month: ₹{total}
       </Typography>
 
       <Stack spacing={1.5}>
-        {expenses.map((e) => (
+        {monthExpenses.length === 0 && (
+          <Typography variant="body2" color="text.secondary">
+            No expenses recorded this month yet.
+          </Typography>
+        )}
+        {monthExpenses.map((e) => (
           <Card key={e.id}>
             <CardContent>
               <Stack direction="row" sx={{ justifyContent: "space-between" }}>
                 <Stack>
-                  <Typography variant="subtitle1">{e.category}</Typography>
+                  <Typography variant="subtitle1">{e.title}</Typography>
                   {e.note && (
                     <Typography variant="body2" color="text.secondary">
                       {e.note}
                     </Typography>
                   )}
                   <Typography variant="caption" color="text.secondary">
-                    {new Date(e.expenseDate).toLocaleString()} · {e.recordedBy}
+                    {new Date(e.expenseDate).toLocaleDateString()} · {e.recordedBy}
                   </Typography>
                 </Stack>
                 <Typography variant="h6">₹{e.amount}</Typography>
@@ -52,6 +65,6 @@ export default function ExpensesPage() {
       </Fab>
 
       <AddExpenseSheet open={open} onClose={() => setOpen(false)} />
-    </AppShell>
+    </>
   );
 }

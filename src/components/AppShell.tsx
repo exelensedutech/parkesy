@@ -7,32 +7,36 @@ import Typography from "@mui/material/Typography";
 import BottomNavigation from "@mui/material/BottomNavigation";
 import BottomNavigationAction from "@mui/material/BottomNavigationAction";
 import Paper from "@mui/material/Paper";
-import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
-import ToggleButton from "@mui/material/ToggleButton";
+import IconButton from "@mui/material/IconButton";
+import Chip from "@mui/material/Chip";
+import Stack from "@mui/material/Stack";
+import HomeIcon from "@mui/icons-material/Home";
 import LocalParkingIcon from "@mui/icons-material/LocalParking";
 import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
-import AssessmentIcon from "@mui/icons-material/Assessment";
+import SettingsIcon from "@mui/icons-material/Settings";
+import LogoutIcon from "@mui/icons-material/Logout";
 import Box from "@mui/material/Box";
 import { useAppStore } from "@/lib/store";
-import { Role } from "@/lib/types";
 
 const employeeTabs = [
-  { label: "Parking", href: "/", icon: <LocalParkingIcon /> },
-  { label: "Expenses", href: "/expenses", icon: <ReceiptLongIcon /> },
+  { label: "Home", href: "/", icon: <HomeIcon /> },
+  { label: "Park", href: "/park", icon: <LocalParkingIcon /> },
+  { label: "Expense", href: "/expenses", icon: <ReceiptLongIcon /> },
 ];
 
-const ownerTabs = [
-  ...employeeTabs,
-  { label: "Reports", href: "/reports", icon: <AssessmentIcon /> },
-];
+const ownerTabs = [...employeeTabs, { label: "Settings", href: "/settings", icon: <SettingsIcon /> }];
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { role, setRole } = useAppStore();
+  const { role, userName, logout } = useAppStore();
 
   const tabs = role === "owner" ? ownerTabs : employeeTabs;
   const activeIndex = Math.max(tabs.findIndex((t) => t.href === pathname), 0);
+
+  const handleLogout = () => {
+    logout();
+  };
 
   return (
     <Box sx={{ minHeight: "100vh", display: "flex", flexDirection: "column", bgcolor: "background.default" }}>
@@ -41,20 +45,16 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           <Typography variant="h6" noWrap>
             Parkesy
           </Typography>
-          <ToggleButtonGroup
-            size="small"
-            value={role}
-            exclusive
-            onChange={(_, value: Role | null) => value && setRole(value)}
-            sx={{ bgcolor: "rgba(255,255,255,0.15)", borderRadius: 2 }}
-          >
-            <ToggleButton value="employee" sx={{ color: "white", border: "none" }}>
-              Employee
-            </ToggleButton>
-            <ToggleButton value="owner" sx={{ color: "white", border: "none" }}>
-              Owner
-            </ToggleButton>
-          </ToggleButtonGroup>
+          <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+            <Chip
+              label={userName || "..."}
+              size="small"
+              sx={{ bgcolor: "rgba(255,255,255,0.15)", color: "white" }}
+            />
+            <IconButton color="inherit" onClick={handleLogout} aria-label="Logout">
+              <LogoutIcon />
+            </IconButton>
+          </Stack>
         </Toolbar>
       </AppBar>
 

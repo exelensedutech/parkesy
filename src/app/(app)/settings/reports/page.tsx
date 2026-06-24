@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Box from "@mui/material/Box";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
@@ -7,47 +9,61 @@ import Typography from "@mui/material/Typography";
 import Stack from "@mui/material/Stack";
 import Grid from "@mui/material/Grid";
 import Divider from "@mui/material/Divider";
-import AppShell from "@/components/AppShell";
+import TextField from "@mui/material/TextField";
+import IconButton from "@mui/material/IconButton";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { useAppStore } from "@/lib/store";
+import { dateToInputValue, isSameDay } from "@/lib/calc";
 
-function isToday(iso: string) {
-  const d = new Date(iso);
-  const now = new Date();
-  return d.toDateString() === now.toDateString();
-}
-
-export default function ReportsPage() {
+export default function ReportsHistoryPage() {
+  const router = useRouter();
   const { role, sessions, expenses, vehicleTypes } = useAppStore();
+  const [dateValue, setDateValue] = useState(dateToInputValue(new Date()));
 
   if (role !== "owner") {
     return (
-      <AppShell>
-        <Typography variant="body1" sx={{ mt: 4 }} align="center" color="text.secondary">
-          Reports are only visible to the Owner.
-        </Typography>
-      </AppShell>
+      <Typography variant="body1" sx={{ mt: 4 }} align="center" color="text.secondary">
+        Reports are only visible to the Owner.
+      </Typography>
     );
   }
 
-  const completedToday = sessions.filter((s) => s.status === "completed" && isToday(s.exitTime!));
-  const expensesToday = expenses.filter((e) => isToday(e.expenseDate));
+  const selectedDate = new Date(`${dateValue}T00:00:00`);
 
-  const collected = completedToday.reduce((sum, s) => sum + (s.amountCharged ?? 0), 0);
-  const spent = expensesToday.reduce((sum, e) => sum + e.amount, 0);
+  const entriesOnDate = sessions.filter((s) => isSameDay(s.entryTime, selectedDate));
+  const exitsOnDate = sessions.filter((s) => s.status === "completed" && s.exitTime && isSameDay(s.exitTime, selectedDate));
+  const expensesOnDate = expenses.filter((e) => isSameDay(e.expenseDate, selectedDate));
+
+  const entryCollected = entriesOnDate.reduce((sum, s) => sum + s.amountPaidAtEntry, 0);
+  const exitCollected = exitsOnDate.reduce((sum, s) => sum + (s.amountPaidAtExit ?? 0), 0);
+  const collected = entryCollected + exitCollected;
+
+  const cashCollected =
+    entriesOnDate.filter((s) => s.paymentModeAtEntry === "cash").reduce((sum, s) => sum + s.amountPaidAtEntry, 0) +
+    exitsOnDate.filter((s) => s.paymentModeAtExit === "cash").reduce((sum, s) => sum + (s.amountPaidAtExit ?? 0), 0);
+  const onlineCollected = collected - cashCollected;
+
+  const spent = expensesOnDate.reduce((sum, e) => sum + e.amount, 0);
   const net = collected - spent;
 
-  const cashTotal = completedToday
-    .filter((s) => s.paymentMode === "cash")
-    .reduce((sum, s) => sum + (s.amountCharged ?? 0), 0);
-  const gpayTotal = completedToday
-    .filter((s) => s.paymentMode === "gpay")
-    .reduce((sum, s) => sum + (s.amountCharged ?? 0), 0);
-
   return (
-    <AppShell>
-      <Typography variant="h6" sx={{ mb: 2 }}>
-        Today&apos;s Report
-      </Typography>
+    <>
+      <Stack direction="row" spacing={1} sx={{ alignItems: "center", mb: 2 }}>
+        <IconButton onClick={() => router.push("/settings")} edge="start">
+          <ArrowBackIcon />
+        </IconButton>
+        <Typography variant="h6">Reports & History</Typography>
+      </Stack>
+
+      <TextField
+        label="Date"
+        type="date"
+        fullWidth
+        value={dateValue}
+        onChange={(e) => setDateValue(e.target.value)}
+        slotProps={{ htmlInput: { style: { textAlign: "left" } }, inputLabel: { shrink: true } }}
+        sx={{ mb: 3 }}
+      />
 
       <Grid container spacing={1.5} sx={{ mb: 3 }}>
         <Grid size={6}>
@@ -84,7 +100,7 @@ export default function ReportsPage() {
               <Typography variant="caption" color="text.secondary">
                 Cash collected
               </Typography>
-              <Typography variant="h6">₹{cashTotal}</Typography>
+              <Typography variant="h6">₹{cashCollected}</Typography>
             </CardContent>
           </Card>
         </Grid>
@@ -92,24 +108,24 @@ export default function ReportsPage() {
           <Card>
             <CardContent>
               <Typography variant="caption" color="text.secondary">
-                GPay collected
+                Online collected
               </Typography>
-              <Typography variant="h6">₹{gpayTotal}</Typography>
+              <Typography variant="h6">₹{onlineCollected}</Typography>
             </CardContent>
           </Card>
         </Grid>
       </Grid>
 
       <Typography variant="subtitle1" sx={{ mb: 1 }}>
-        Completed Transactions Today
+        Vehicles Exited This Day
       </Typography>
       <Stack spacing={1} sx={{ mb: 3 }}>
-        {completedToday.length === 0 && (
+        {exitsOnDate.length === 0 && (
           <Typography variant="body2" color="text.secondary">
-            No completed transactions yet today.
+            No completed transactions on this day.
           </Typography>
         )}
-        {completedToday.map((s) => {
+        {exitsOnDate.map((s) => {
           const vt = vehicleTypes.find((v) => v.id === s.vehicleTypeId)!;
           return (
             <Card key={s.id}>
@@ -117,13 +133,13 @@ export default function ReportsPage() {
                 <Stack direction="row" sx={{ justifyContent: "space-between", alignItems: "center" }}>
                   <Box>
                     <Typography variant="body2">
-                      {s.tokenCode} · {vt.name}
+                      {s.tokenCode} · {vt.name} · {s.vehicleNumber}
                     </Typography>
                     <Typography variant="caption" color="text.secondary">
-                      {s.paymentMode?.toUpperCase()} · {s.recordedBy}
+                      {s.recordedBy}
                     </Typography>
                   </Box>
-                  <Typography variant="subtitle1">₹{s.amountCharged}</Typography>
+                  <Typography variant="subtitle1">₹{s.totalAmount}</Typography>
                 </Stack>
               </CardContent>
             </Card>
@@ -134,25 +150,25 @@ export default function ReportsPage() {
       <Divider sx={{ mb: 2 }} />
 
       <Typography variant="subtitle1" sx={{ mb: 1 }}>
-        Expenses Today
+        Expenses This Day
       </Typography>
       <Stack spacing={1}>
-        {expensesToday.length === 0 && (
+        {expensesOnDate.length === 0 && (
           <Typography variant="body2" color="text.secondary">
-            No expenses recorded today.
+            No expenses recorded on this day.
           </Typography>
         )}
-        {expensesToday.map((e) => (
+        {expensesOnDate.map((e) => (
           <Card key={e.id}>
             <CardContent sx={{ py: 1.5 }}>
               <Stack direction="row" sx={{ justifyContent: "space-between", alignItems: "center" }}>
-                <Typography variant="body2">{e.category}</Typography>
+                <Typography variant="body2">{e.title}</Typography>
                 <Typography variant="subtitle1">₹{e.amount}</Typography>
               </Stack>
             </CardContent>
           </Card>
         ))}
       </Stack>
-    </AppShell>
+    </>
   );
 }

@@ -6,21 +6,29 @@ import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import TextField from "@mui/material/TextField";
 import Button from "@mui/material/Button";
+import InputAdornment from "@mui/material/InputAdornment";
 import { useAppStore } from "@/lib/store";
+import { dateToInputValue } from "@/lib/calc";
 
 export default function AddExpenseSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const { addExpense, role } = useAppStore();
+  const { addExpense } = useAppStore();
+  const today = new Date();
+  const monthStart = dateToInputValue(new Date(today.getFullYear(), today.getMonth(), 1));
+  const monthEnd = dateToInputValue(new Date(today.getFullYear(), today.getMonth() + 1, 0));
+
   const [amount, setAmount] = useState("");
-  const [category, setCategory] = useState("");
+  const [title, setTitle] = useState("");
   const [note, setNote] = useState("");
+  const [date, setDate] = useState(dateToInputValue(today));
 
   const handleSave = () => {
     const value = parseFloat(amount);
-    if (!value || !category.trim()) return;
-    addExpense(value, category.trim(), note.trim() || undefined, role === "owner" ? "Owner" : "Employee");
+    if (!value || !title.trim()) return;
+    addExpense(value, title.trim(), note.trim() || undefined, new Date(date).toISOString());
     setAmount("");
-    setCategory("");
+    setTitle("");
     setNote("");
+    setDate(dateToInputValue(today));
     onClose();
   };
 
@@ -32,19 +40,32 @@ export default function AddExpenseSheet({ open, onClose }: { open: boolean; onCl
         </Typography>
 
         <TextField
-          label="Amount (₹)"
+          label="Title"
+          placeholder="e.g. Maintenance, Tea/Snacks"
+          fullWidth
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          sx={{ mb: 2 }}
+        />
+        <TextField
+          label="Cost"
           type="number"
           fullWidth
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
+          slotProps={{ input: { startAdornment: <InputAdornment position="start">₹</InputAdornment> } }}
           sx={{ mb: 2 }}
         />
         <TextField
-          label="Category"
-          placeholder="e.g. Maintenance, Tea/Snacks"
+          label="Date"
+          type="date"
           fullWidth
-          value={category}
-          onChange={(e) => setCategory(e.target.value)}
+          value={date}
+          onChange={(e) => setDate(e.target.value)}
+          slotProps={{
+            htmlInput: { min: monthStart, max: monthEnd, style: { textAlign: "left" } },
+            inputLabel: { shrink: true },
+          }}
           sx={{ mb: 2 }}
         />
         <TextField
