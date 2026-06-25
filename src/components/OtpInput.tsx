@@ -30,7 +30,7 @@ export default function OtpInput({
     }
   };
 
-  const handleKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleKeyDown = (index: number, e: React.KeyboardEvent<HTMLDivElement>) => {
     if (e.key === "Backspace" && !value[index] && index > 0) {
       refs.current[index - 1]?.focus();
     }

@@ -2,44 +2,78 @@
 
 import { useState } from "react";
 import Box from "@mui/material/Box";
-import Tabs from "@mui/material/Tabs";
-import Tab from "@mui/material/Tab";
+import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
+import ToggleButton from "@mui/material/ToggleButton";
 import TextField from "@mui/material/TextField";
 import InputAdornment from "@mui/material/InputAdornment";
+import IconButton from "@mui/material/IconButton";
+import Badge from "@mui/material/Badge";
 import SearchIcon from "@mui/icons-material/Search";
+import FilterListIcon from "@mui/icons-material/FilterList";
+import LoginIcon from "@mui/icons-material/Login";
+import LogoutIcon from "@mui/icons-material/Logout";
+import CardMembershipIcon from "@mui/icons-material/CardMembership";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
 import Typography from "@mui/material/Typography";
 import Stack from "@mui/material/Stack";
+import Avatar from "@mui/material/Avatar";
 import Chip from "@mui/material/Chip";
 import ParkInForm from "@/components/ParkInForm";
 import ParkOutSheet from "@/components/ParkOutSheet";
+import ParkOutFilterSheet, { DurationFilter, MemberFilter } from "@/components/ParkOutFilterSheet";
+import ParkExitConfirmationDialog, { ParkExitConfirmation } from "@/components/ParkExitConfirmationDialog";
 import VehicleIcon from "@/components/VehicleIcon";
 import { useAppStore } from "@/lib/store";
 import { ParkingSession } from "@/lib/types";
 import { durationHours, formatDuration } from "@/lib/calc";
+import { VEHICLE_COLORS } from "@/lib/colors";
 
 export default function ParkPage() {
   const { sessions, vehicleTypes } = useAppStore();
   const [tab, setTab] = useState<"in" | "out">("in");
   const [search, setSearch] = useState("");
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [typeFilter, setTypeFilter] = useState("all");
+  const [durationFilter, setDurationFilter] = useState<DurationFilter>("any");
+  const [memberFilter, setMemberFilter] = useState<MemberFilter>("all");
   const [outSession, setOutSession] = useState<ParkingSession | null>(null);
+  const [exitConfirmation, setExitConfirmation] = useState<ParkExitConfirmation | null>(null);
+
+  const filtersActive = typeFilter !== "all" || durationFilter !== "any" || memberFilter !== "all";
+
+  const resetFilters = () => {
+    setTypeFilter("all");
+    setDurationFilter("any");
+    setMemberFilter("all");
+  };
 
   const parked = sessions
     .filter((s) => s.status === "parked")
-    .filter((s) => s.vehicleNumber.toLowerCase().includes(search.trim().toLowerCase()));
+    .filter((s) => s.vehicleNumber.toLowerCase().includes(search.trim().toLowerCase()))
+    .filter((s) => typeFilter === "all" || s.vehicleTypeId === typeFilter)
+    .filter((s) => durationFilter === "any" || durationHours(s.entryTime) >= durationFilter)
+    .filter((s) => memberFilter === "all" || (memberFilter === "member" ? Boolean(s.memberId) : !s.memberId))
+    .sort((a, b) => durationHours(b.entryTime) - durationHours(a.entryTime));
 
   return (
     <>
-      <Tabs
+      <ToggleButtonGroup
         value={tab}
-        onChange={(_, value) => setTab(value)}
-        variant="fullWidth"
-        sx={{ mb: 2, borderBottom: 1, borderColor: "divider" }}
+        exclusive
+        onChange={(_, value) => value && setTab(value)}
+        fullWidth
+        sx={{ mb: 2.5 }}
       >
-        <Tab label="In" value="in" />
-        <Tab label="Out" value="out" />
-      </Tabs>
+        <ToggleButton value="in">
+          <LoginIcon sx={{ mr: 1 }} fontSize="small" />
+          In
+        </ToggleButton>
+        <ToggleButton value="out">
+          <LogoutIcon sx={{ mr: 1 }} fontSize="small" />
+          Out
+        </ToggleButton>
+      </ToggleButtonGroup>
 
       {tab === "in" && <ParkInForm />}
 
@@ -50,19 +84,37 @@ export default function ParkPage() {
             fullWidth
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            slotProps={{ input: { startAdornment: <InputAdornment position="start"><SearchIcon /></InputAdornment> } }}
+            slotProps={{
+              input: {
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon />
+                  </InputAdornment>
+                ),
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton onClick={() => setFilterOpen(true)} edge="end" aria-label="Filters">
+                      <Badge color="primary" variant="dot" invisible={!filtersActive}>
+                        <FilterListIcon />
+                      </Badge>
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              },
+            }}
             sx={{ mb: 2 }}
           />
 
           <Stack spacing={1.5}>
             {parked.length === 0 && (
               <Typography variant="body2" color="text.secondary">
-                No parked vehicles match your search.
+                No parked vehicles match your search/filters.
               </Typography>
             )}
             {parked.map((session) => {
               const vehicleType = vehicleTypes.find((vt) => vt.id === session.vehicleTypeId)!;
-              const parkedAt = new Date(session.entryTime).toLocaleString(undefined, {
+              const color = VEHICLE_COLORS[vehicleType.name];
+              const parkedAt = new Date(session.entryTime).toLocaleString("en-IN", {
                 day: "numeric",
                 month: "short",
                 hour: "numeric",
@@ -73,7 +125,9 @@ export default function ParkPage() {
                   <CardContent>
                     <Stack direction="row" sx={{ justifyContent: "space-between", alignItems: "center" }}>
                       <Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}>
-                        <VehicleIcon name={vehicleType.name} />
+                        <Avatar sx={{ bgcolor: color, width: 36, height: 36 }}>
+                          <VehicleIcon name={vehicleType.name} />
+                        </Avatar>
                         <Box>
                           <Typography variant="subtitle1">{vehicleType.name}</Typography>
                           <Typography variant="body2" color="text.secondary">
@@ -82,7 +136,12 @@ export default function ParkPage() {
                           </Typography>
                         </Box>
                       </Stack>
-                      <Chip label={formatDuration(durationHours(session.entryTime))} size="small" />
+                      <Stack direction="row" spacing={0.75} sx={{ alignItems: "center" }}>
+                        {session.memberId && (
+                          <CardMembershipIcon fontSize="small" color="success" />
+                        )}
+                        <Chip label={formatDuration(durationHours(session.entryTime))} size="small" />
+                      </Stack>
                     </Stack>
                   </CardContent>
                 </Card>
@@ -92,7 +151,26 @@ export default function ParkPage() {
         </Box>
       )}
 
-      <ParkOutSheet session={outSession} onClose={() => setOutSession(null)} />
+      <ParkOutSheet
+        session={outSession}
+        onClose={() => setOutSession(null)}
+        onCompleted={setExitConfirmation}
+      />
+
+      <ParkExitConfirmationDialog confirmation={exitConfirmation} onClose={() => setExitConfirmation(null)} />
+
+      <ParkOutFilterSheet
+        open={filterOpen}
+        onClose={() => setFilterOpen(false)}
+        vehicleTypes={vehicleTypes}
+        typeFilter={typeFilter}
+        setTypeFilter={setTypeFilter}
+        durationFilter={durationFilter}
+        setDurationFilter={setDurationFilter}
+        memberFilter={memberFilter}
+        setMemberFilter={setMemberFilter}
+        onReset={resetFilters}
+      />
     </>
   );
 }

@@ -17,7 +17,7 @@ import { dateToInputValue, isSameDay } from "@/lib/calc";
 
 export default function ReportsHistoryPage() {
   const router = useRouter();
-  const { role, sessions, expenses, vehicleTypes } = useAppStore();
+  const { role, sessions, expenses, vehicleTypes, members, memberPayments } = useAppStore();
   const [dateValue, setDateValue] = useState(dateToInputValue(new Date()));
 
   if (role !== "owner") {
@@ -34,13 +34,18 @@ export default function ReportsHistoryPage() {
   const exitsOnDate = sessions.filter((s) => s.status === "completed" && s.exitTime && isSameDay(s.exitTime, selectedDate));
   const expensesOnDate = expenses.filter((e) => isSameDay(e.expenseDate, selectedDate));
 
+  const memberPaymentsOnDate = memberPayments.filter((mp) => isSameDay(mp.paidAt, selectedDate));
+
   const entryCollected = entriesOnDate.reduce((sum, s) => sum + s.amountPaidAtEntry, 0);
   const exitCollected = exitsOnDate.reduce((sum, s) => sum + (s.amountPaidAtExit ?? 0), 0);
-  const collected = entryCollected + exitCollected;
+  const walkInCollected = entryCollected + exitCollected;
+  const memberRevenue = memberPaymentsOnDate.reduce((sum, mp) => sum + mp.amount, 0);
+  const collected = walkInCollected + memberRevenue;
 
   const cashCollected =
     entriesOnDate.filter((s) => s.paymentModeAtEntry === "cash").reduce((sum, s) => sum + s.amountPaidAtEntry, 0) +
-    exitsOnDate.filter((s) => s.paymentModeAtExit === "cash").reduce((sum, s) => sum + (s.amountPaidAtExit ?? 0), 0);
+    exitsOnDate.filter((s) => s.paymentModeAtExit === "cash").reduce((sum, s) => sum + (s.amountPaidAtExit ?? 0), 0) +
+    memberPaymentsOnDate.filter((mp) => mp.paymentMode === "cash").reduce((sum, mp) => sum + mp.amount, 0);
   const onlineCollected = collected - cashCollected;
 
   const spent = expensesOnDate.reduce((sum, e) => sum + e.amount, 0);
@@ -114,6 +119,26 @@ export default function ReportsHistoryPage() {
             </CardContent>
           </Card>
         </Grid>
+        <Grid size={6}>
+          <Card>
+            <CardContent>
+              <Typography variant="caption" color="text.secondary">
+                Walk-in revenue
+              </Typography>
+              <Typography variant="h6">₹{walkInCollected}</Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid size={6}>
+          <Card>
+            <CardContent>
+              <Typography variant="caption" color="text.secondary">
+                Member revenue
+              </Typography>
+              <Typography variant="h6">₹{memberRevenue}</Typography>
+            </CardContent>
+          </Card>
+        </Grid>
       </Grid>
 
       <Typography variant="subtitle1" sx={{ mb: 1 }}>
@@ -140,6 +165,39 @@ export default function ReportsHistoryPage() {
                     </Typography>
                   </Box>
                   <Typography variant="subtitle1">₹{s.totalAmount}</Typography>
+                </Stack>
+              </CardContent>
+            </Card>
+          );
+        })}
+      </Stack>
+
+      <Divider sx={{ mb: 2 }} />
+
+      <Typography variant="subtitle1" sx={{ mb: 1 }}>
+        Membership Payments This Day
+      </Typography>
+      <Stack spacing={1} sx={{ mb: 3 }}>
+        {memberPaymentsOnDate.length === 0 && (
+          <Typography variant="body2" color="text.secondary">
+            No membership signups or renewals on this day.
+          </Typography>
+        )}
+        {memberPaymentsOnDate.map((mp) => {
+          const member = members.find((m) => m.id === mp.memberId);
+          return (
+            <Card key={mp.id}>
+              <CardContent sx={{ py: 1.5 }}>
+                <Stack direction="row" sx={{ justifyContent: "space-between", alignItems: "center" }}>
+                  <Box>
+                    <Typography variant="body2">
+                      {member?.vehicleNumber ?? "—"} · {mp.type === "signup" ? "New signup" : "Renewal"}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {mp.paymentMode.toUpperCase()}
+                    </Typography>
+                  </Box>
+                  <Typography variant="subtitle1">₹{mp.amount}</Typography>
                 </Stack>
               </CardContent>
             </Card>

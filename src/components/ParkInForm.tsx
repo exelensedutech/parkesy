@@ -1,134 +1,303 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import Box from "@mui/material/Box";
+import Card from "@mui/material/Card";
+import CardContent from "@mui/material/CardContent";
 import Typography from "@mui/material/Typography";
 import TextField from "@mui/material/TextField";
 import Button from "@mui/material/Button";
-import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
-import ToggleButton from "@mui/material/ToggleButton";
+import Grid from "@mui/material/Grid";
 import Stack from "@mui/material/Stack";
+import Avatar from "@mui/material/Avatar";
+import IconButton from "@mui/material/IconButton";
 import InputAdornment from "@mui/material/InputAdornment";
-import Snackbar from "@mui/material/Snackbar";
 import Alert from "@mui/material/Alert";
+import Dialog from "@mui/material/Dialog";
+import DialogContent from "@mui/material/DialogContent";
+import DialogActions from "@mui/material/DialogActions";
+import CameraAltIcon from "@mui/icons-material/CameraAlt";
+import DeleteIcon from "@mui/icons-material/Delete";
+import PaymentsIcon from "@mui/icons-material/Payments";
+import CreditCardIcon from "@mui/icons-material/CreditCard";
+import CardMembershipIcon from "@mui/icons-material/CardMembership";
+import { alpha } from "@mui/material/styles";
 import VehicleIcon from "./VehicleIcon";
+import ParkConfirmationDialog, { ParkConfirmation } from "./ParkConfirmationDialog";
 import { useAppStore } from "@/lib/store";
 import { PaymentMode } from "@/lib/types";
+import { VEHICLE_COLORS, CASH_COLOR, ONLINE_COLOR } from "@/lib/colors";
 
 export default function ParkInForm() {
-  const { vehicleTypes, startSession } = useAppStore();
+  const { vehicleTypes, startSession, findActiveMember } = useAppStore();
   const [vehicleTypeId, setVehicleTypeId] = useState(vehicleTypes[0].id);
   const [vehicleNumber, setVehicleNumber] = useState("");
   const [amountPaid, setAmountPaid] = useState("");
   const [paymentMode, setPaymentMode] = useState<PaymentMode>("cash");
   const [numberError, setNumberError] = useState("");
-  const [amountError, setAmountError] = useState("");
-  const [showToast, setShowToast] = useState(false);
+  const [confirmation, setConfirmation] = useState<ParkConfirmation | null>(null);
+  const [photoUrl, setPhotoUrl] = useState<string | undefined>();
+  const [previewOpen, setPreviewOpen] = useState(false);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const selectedVehicleType = vehicleTypes.find((vt) => vt.id === vehicleTypeId)!;
   const isCycle = selectedVehicleType.name === "Cycle";
+  const activeMember = !isCycle ? findActiveMember(vehicleNumber) : undefined;
+
+  const handlePhotoSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    // Only one photo per vehicle — discard whatever was captured before.
+    if (photoUrl) URL.revokeObjectURL(photoUrl);
+    setPhotoUrl(URL.createObjectURL(file));
+  };
+
+  const handleDeletePhoto = () => {
+    if (photoUrl) URL.revokeObjectURL(photoUrl);
+    setPhotoUrl(undefined);
+    setPreviewOpen(false);
+  };
+
+  const handleRetakePhoto = () => {
+    setPreviewOpen(false);
+    fileInputRef.current?.click();
+  };
+
+  const paidValue = parseFloat(amountPaid) || 0;
 
   const handlePark = () => {
-    let hasError = false;
     if (!isCycle && !vehicleNumber.trim()) {
       setNumberError("Vehicle number is required");
-      hasError = true;
+      return;
     }
-    if (amountPaid.trim() === "" || Number.isNaN(parseFloat(amountPaid)) || parseFloat(amountPaid) < 0) {
-      setAmountError("Amount paid is required");
-      hasError = true;
-    }
-    if (hasError) return;
 
-    const paidValue = parseFloat(amountPaid);
-    startSession(vehicleTypeId, isCycle ? "" : vehicleNumber.trim().toUpperCase(), paidValue, paymentMode);
+    const finalVehicleNumber = isCycle ? "" : vehicleNumber.trim().toUpperCase();
+    const tokenCode = startSession(
+      vehicleTypeId,
+      finalVehicleNumber,
+      paidValue,
+      paidValue > 0 ? paymentMode : undefined,
+      photoUrl
+    );
+    setConfirmation({
+      tokenCode,
+      vehicleTypeName: selectedVehicleType.name,
+      vehicleNumber: finalVehicleNumber,
+      amountPaid: paidValue,
+      isMember: Boolean(activeMember),
+    });
     setVehicleNumber("");
     setAmountPaid("");
     setNumberError("");
-    setAmountError("");
-    setShowToast(true);
+    setPhotoUrl(undefined);
   };
 
   return (
     <Box>
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-        Vehicle type
+      <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
+        Vehicle Details
       </Typography>
-      <ToggleButtonGroup
-        value={vehicleTypeId}
-        exclusive
-        onChange={(_, value) => value && setVehicleTypeId(value)}
-        fullWidth
-        sx={{ mb: 3 }}
-      >
-        {vehicleTypes.map((vt) => (
-          <ToggleButton key={vt.id} value={vt.id}>
-            <Stack spacing={0.5} sx={{ alignItems: "center", py: 0.5 }}>
-              <VehicleIcon name={vt.name} />
-              <Typography variant="caption">{vt.name}</Typography>
-            </Stack>
-          </ToggleButton>
-        ))}
-      </ToggleButtonGroup>
+      <Card sx={{ mb: 2.5 }}>
+        <CardContent>
+          <Typography variant="caption" color="text.secondary">
+            Vehicle Type
+          </Typography>
+          <Grid container spacing={1.5} sx={{ mt: 0.5, mb: 2.5 }}>
+            {vehicleTypes.map((vt) => {
+              const color = VEHICLE_COLORS[vt.name];
+              const selected = vt.id === vehicleTypeId;
+              return (
+                <Grid size={4} key={vt.id}>
+                  <Card
+                    variant="outlined"
+                    onClick={() => setVehicleTypeId(vt.id)}
+                    sx={{
+                      cursor: "pointer",
+                      textAlign: "center",
+                      py: 1.25,
+                      bgcolor: selected ? alpha(color, 0.1) : "background.paper",
+                      borderColor: selected ? color : "divider",
+                      borderWidth: selected ? 2 : 1,
+                    }}
+                  >
+                    <Avatar
+                      sx={{
+                        bgcolor: selected ? color : alpha(color, 0.15),
+                        color: selected ? "white" : color,
+                        width: 36,
+                        height: 36,
+                        mx: "auto",
+                        mb: 0.5,
+                      }}
+                    >
+                      <VehicleIcon name={vt.name} />
+                    </Avatar>
+                    <Typography variant="body2" sx={{ fontWeight: 600, color: selected ? color : "text.primary" }}>
+                      {vt.name}
+                    </Typography>
+                  </Card>
+                </Grid>
+              );
+            })}
+          </Grid>
 
-      {!isCycle && (
-        <TextField
-          label="Vehicle number"
-          fullWidth
-          value={vehicleNumber}
-          onChange={(e) => {
-            setVehicleNumber(e.target.value);
-            setNumberError("");
-          }}
-          error={Boolean(numberError)}
-          helperText={numberError || " "}
-          sx={{ mb: 1 }}
-        />
+          {!isCycle && (
+            <TextField
+              label="Vehicle number"
+              fullWidth
+              value={vehicleNumber}
+              onChange={(e) => {
+                setVehicleNumber(e.target.value);
+                setNumberError("");
+              }}
+              error={Boolean(numberError)}
+              helperText={numberError || " "}
+              slotProps={{
+                input: {
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton onClick={() => fileInputRef.current?.click()} edge="end">
+                        <CameraAltIcon color={photoUrl ? "primary" : "action"} />
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                },
+              }}
+            />
+          )}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            style={{ display: "none" }}
+            onChange={handlePhotoSelected}
+          />
+
+          {photoUrl && (
+            <Stack direction="row" spacing={1.5} sx={{ alignItems: "center", mt: 1.5 }}>
+              <Avatar
+                src={photoUrl}
+                variant="rounded"
+                sx={{ width: 56, height: 56, cursor: "pointer" }}
+                onClick={() => setPreviewOpen(true)}
+              />
+              <Typography variant="body2" color="text.secondary">
+                Vehicle photo captured — tap to view
+              </Typography>
+            </Stack>
+          )}
+
+          {activeMember && (
+            <Alert icon={<CardMembershipIcon fontSize="inherit" />} severity="success" sx={{ mt: 1.5 }}>
+              Member{activeMember.customerName ? ` — ${activeMember.customerName}` : ""} · valid till{" "}
+              {new Date(activeMember.expiryDate).toLocaleDateString("en-IN", { day: "numeric", month: "short" })} ·
+              Entry is free
+            </Alert>
+          )}
+        </CardContent>
+      </Card>
+
+      {!activeMember && (
+        <>
+          <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
+            Payment
+          </Typography>
+          <Card sx={{ mb: 3 }}>
+            <CardContent>
+              <TextField
+                label="Amount paid"
+                type="number"
+                fullWidth
+                value={amountPaid}
+                onChange={(e) => setAmountPaid(e.target.value)}
+                slotProps={{ input: { startAdornment: <InputAdornment position="start">₹</InputAdornment> } }}
+                sx={{ mb: paidValue > 0 ? 1 : 0 }}
+              />
+
+              {paidValue > 0 && (
+                <>
+                  <Typography variant="caption" color="text.secondary">
+                    Payment mode
+                  </Typography>
+                  <Grid container spacing={1.5} sx={{ mt: 0.5 }}>
+                    {(
+                      [
+                        { mode: "cash" as PaymentMode, label: "Cash", icon: <PaymentsIcon />, color: CASH_COLOR },
+                        { mode: "online" as PaymentMode, label: "Online", icon: <CreditCardIcon />, color: ONLINE_COLOR },
+                      ]
+                    ).map((opt) => {
+                      const selected = paymentMode === opt.mode;
+                      return (
+                        <Grid size={6} key={opt.mode}>
+                          <Card
+                            variant="outlined"
+                            onClick={() => setPaymentMode(opt.mode)}
+                            sx={{
+                              cursor: "pointer",
+                              textAlign: "center",
+                              py: 1.25,
+                              bgcolor: selected ? alpha(opt.color, 0.1) : "background.paper",
+                              borderColor: selected ? opt.color : "divider",
+                              borderWidth: selected ? 2 : 1,
+                            }}
+                          >
+                            <Avatar
+                              sx={{
+                                bgcolor: selected ? opt.color : alpha(opt.color, 0.15),
+                                color: selected ? "white" : opt.color,
+                                width: 36,
+                                height: 36,
+                                mx: "auto",
+                                mb: 0.5,
+                              }}
+                            >
+                              {opt.icon}
+                            </Avatar>
+                            <Typography
+                              variant="body2"
+                              sx={{ fontWeight: 600, color: selected ? opt.color : "text.primary" }}
+                            >
+                              {opt.label}
+                            </Typography>
+                          </Card>
+                        </Grid>
+                      );
+                    })}
+                  </Grid>
+                </>
+              )}
+            </CardContent>
+          </Card>
+        </>
       )}
 
-      <TextField
-        label="Amount paid"
-        type="number"
+      <Button
+        variant="contained"
+        size="large"
         fullWidth
-        value={amountPaid}
-        onChange={(e) => {
-          setAmountPaid(e.target.value);
-          setAmountError("");
-        }}
-        error={Boolean(amountError)}
-        helperText={amountError || " "}
-        slotProps={{ input: { startAdornment: <InputAdornment position="start">₹</InputAdornment> } }}
-        sx={{ mb: 1 }}
-      />
-
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-        Payment mode
-      </Typography>
-      <ToggleButtonGroup
-        value={paymentMode}
-        exclusive
-        onChange={(_, value) => value && setPaymentMode(value)}
-        fullWidth
-        sx={{ mb: 3 }}
+        onClick={handlePark}
+        sx={{ borderRadius: 6, py: 1.3, fontWeight: 600, boxShadow: "0 6px 16px rgba(0,101,143,0.35)" }}
       >
-        <ToggleButton value="cash">Cash</ToggleButton>
-        <ToggleButton value="online">Online</ToggleButton>
-      </ToggleButtonGroup>
-
-      <Button variant="contained" size="large" fullWidth onClick={handlePark}>
-        Park Vehicle &amp; Issue Token
+        Park &amp; Issue Ticket
       </Button>
 
-      <Snackbar
-        open={showToast}
-        autoHideDuration={2500}
-        onClose={() => setShowToast(false)}
-        anchorOrigin={{ vertical: "top", horizontal: "center" }}
-      >
-        <Alert severity="success" variant="filled" onClose={() => setShowToast(false)} sx={{ width: "100%" }}>
-          Vehicle added successfully
-        </Alert>
-      </Snackbar>
+      <ParkConfirmationDialog confirmation={confirmation} onClose={() => setConfirmation(null)} />
+
+      <Dialog open={previewOpen} onClose={() => setPreviewOpen(false)} maxWidth="xs" fullWidth>
+        <DialogContent sx={{ p: 0 }}>
+          {photoUrl && <Box component="img" src={photoUrl} alt="Vehicle" sx={{ width: "100%", display: "block" }} />}
+        </DialogContent>
+        <DialogActions sx={{ justifyContent: "space-between", px: 2, py: 1.5 }}>
+          <Button color="error" startIcon={<DeleteIcon />} onClick={handleDeletePhoto}>
+            Delete
+          </Button>
+          <Button startIcon={<CameraAltIcon />} onClick={handleRetakePhoto}>
+            Retake
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

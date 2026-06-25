@@ -23,7 +23,7 @@ export default function ExpensesPage() {
     .sort((a, b) => new Date(b.expenseDate).getTime() - new Date(a.expenseDate).getTime());
 
   const total = monthExpenses.reduce((sum, e) => sum + e.amount, 0);
-  const monthLabel = now.toLocaleDateString(undefined, { month: "long", year: "numeric" });
+  const monthLabel = now.toLocaleDateString("en-IN", { month: "long", year: "numeric" });
 
   return (
     <>
@@ -50,7 +50,8 @@ export default function ExpensesPage() {
                     </Typography>
                   )}
                   <Typography variant="caption" color="text.secondary">
-                    {new Date(e.expenseDate).toLocaleDateString()} · {e.recordedBy}
+                    {new Date(e.expenseDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })} ·{" "}
+                    {e.recordedBy}
                   </Typography>
                 </Stack>
                 <Typography variant="h6">₹{e.amount}</Typography>

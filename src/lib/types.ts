@@ -14,6 +14,7 @@ export interface VehicleType {
   id: string;
   name: VehicleTypeName;
   slabs: RateSlab[];
+  totalSlots: number;
 }
 
 export type PaymentMode = "cash" | "online";
@@ -25,6 +26,7 @@ export interface ParkingSession {
   tokenCode: string;
   vehicleTypeId: string;
   vehicleNumber: string;
+  vehiclePhotoUrl?: string;
   entryTime: string; // ISO
   exitTime?: string; // ISO
   amountPaidAtEntry: number;
@@ -34,6 +36,7 @@ export interface ParkingSession {
   totalAmount?: number; // computed total cost, set once the vehicle exits
   recordedBy: string;
   status: SessionStatus;
+  memberId?: string; // set when this visit was covered by an active membership
 }
 
 export interface Expense {
@@ -43,4 +46,24 @@ export interface Expense {
   note?: string;
   expenseDate: string; // ISO, defaults to today, editable within current month
   recordedBy: string;
+}
+
+export interface Member {
+  id: string;
+  vehicleNumber: string; // uppercase, trimmed — the matching key at Park-In
+  vehicleTypeId: string;
+  customerName?: string;
+  monthlyFee: number;
+  startDate: string; // ISO
+  expiryDate: string; // ISO
+  recordedBy: string;
+}
+
+export interface MemberPayment {
+  id: string;
+  memberId: string;
+  amount: number;
+  paymentMode: PaymentMode;
+  paidAt: string; // ISO
+  type: "signup" | "renewal";
 }

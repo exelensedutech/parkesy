@@ -17,11 +17,27 @@ export function isSameDay(iso: string, reference: Date): boolean {
   return new Date(iso).toDateString() === reference.toDateString();
 }
 
+export function isSameMonth(iso: string, reference: Date): boolean {
+  const d = new Date(iso);
+  return d.getMonth() === reference.getMonth() && d.getFullYear() === reference.getFullYear();
+}
+
 export function dateToInputValue(date: Date): string {
   const y = date.getFullYear();
   const m = String(date.getMonth() + 1).padStart(2, "0");
   const d = String(date.getDate()).padStart(2, "0");
   return `${y}-${m}-${d}`;
+}
+
+export function addOneMonth(iso: string): string {
+  const d = new Date(iso);
+  d.setMonth(d.getMonth() + 1);
+  return d.toISOString();
+}
+
+export function daysUntil(iso: string, reference: Date = new Date()): number {
+  const ms = new Date(iso).getTime() - reference.getTime();
+  return Math.ceil(ms / (1000 * 60 * 60 * 24));
 }
 
 export function calculateAmount(vehicleType: VehicleType, hours: number): number {
