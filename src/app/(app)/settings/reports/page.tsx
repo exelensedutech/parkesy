@@ -6,12 +6,10 @@ import IconButton from "@mui/material/IconButton";
 import Typography from "@mui/material/Typography";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import EventIcon from "@mui/icons-material/Event";
-import BarChartIcon from "@mui/icons-material/BarChart";
 import CategoryIcon from "@mui/icons-material/Category";
 import BadgeIcon from "@mui/icons-material/Badge";
 import CurrencyExchangeIcon from "@mui/icons-material/CurrencyExchange";
 import AutorenewIcon from "@mui/icons-material/Autorenew";
-import AccessTimeIcon from "@mui/icons-material/AccessTime";
 import HourglassBottomIcon from "@mui/icons-material/HourglassBottom";
 import { SettingsRow } from "@/components/SettingsRow";
 import { useAppStore } from "@/lib/store";
@@ -23,13 +21,6 @@ const REPORTS = [
     color: "#00658F",
     title: "Period Report",
     subtitle: "Traffic and collections by vehicle type — daily, weekly or monthly",
-  },
-  {
-    path: "/settings/reports/collection-summary",
-    icon: <BarChartIcon />,
-    color: "#2E7D32",
-    title: "Collection Summary",
-    subtitle: "Revenue trend and breakdown over a date range",
   },
   {
     path: "/settings/reports/vehicle-performance",
@@ -60,13 +51,6 @@ const REPORTS = [
     subtitle: "Expiring soon, lapsed, and renewal revenue",
   },
   {
-    path: "/settings/reports/peak-hours",
-    icon: <AccessTimeIcon />,
-    color: "#5E35B1",
-    title: "Peak Hours",
-    subtitle: "Busiest hours of day and days of week",
-  },
-  {
     path: "/settings/reports/long-stay",
     icon: <HourglassBottomIcon />,
     color: "#AD1457",
@@ -79,10 +63,10 @@ export default function ReportsHubPage() {
   const router = useRouter();
   const { role } = useAppStore();
 
-  if (role !== "owner") {
+  if (role !== "admin") {
     return (
       <Typography variant="body1" sx={{ mt: 4 }} align="center" color="text.secondary">
-        Reports are only visible to the Owner.
+        Reports are only visible to the Admin.
       </Typography>
     );
   }

@@ -74,7 +74,7 @@ export const initialSessions: ParkingSession[] = [
     entryTime: hoursAgo(1.5),
     amountPaidAtEntry: 15,
     paymentModeAtEntry: "cash",
-    recordedBy: "Employee",
+    recordedBy: "Vikram Nair",
     status: "parked",
   },
   {
@@ -85,7 +85,7 @@ export const initialSessions: ParkingSession[] = [
     entryTime: hoursAgo(0.4),
     amountPaidAtEntry: 25,
     paymentModeAtEntry: "cash",
-    recordedBy: "Employee",
+    recordedBy: "Vikram Nair",
     status: "parked",
   },
   {
@@ -96,7 +96,30 @@ export const initialSessions: ParkingSession[] = [
     entryTime: hoursAgo(0.2),
     amountPaidAtEntry: 5,
     paymentModeAtEntry: "online",
-    recordedBy: "Employee",
+    recordedBy: "Vikram Nair",
+    status: "parked",
+  },
+  // Long-stay examples — still parked well beyond the default 24h threshold
+  {
+    id: "s14",
+    tokenCode: "T-076",
+    vehicleTypeId: "bike",
+    vehicleNumber: "KA06UV7788",
+    entryTime: hoursAgo(30),
+    amountPaidAtEntry: 15,
+    paymentModeAtEntry: "cash",
+    recordedBy: "Anita Rao",
+    status: "parked",
+  },
+  {
+    id: "s15",
+    tokenCode: "T-059",
+    vehicleTypeId: "car",
+    vehicleNumber: "KA09WX4455",
+    entryTime: hoursAgo(52),
+    amountPaidAtEntry: 20,
+    paymentModeAtEntry: "online",
+    recordedBy: "Vikram Nair",
     status: "parked",
   },
   // Completed earlier today
@@ -111,8 +134,8 @@ export const initialSessions: ParkingSession[] = [
     amountPaidAtExit: 20,
     paymentModeAtExit: "cash",
     totalAmount: 20,
-    recordedBy: "Employee",
-    exitRecordedBy: "Owner",
+    recordedBy: "Vikram Nair",
+    exitRecordedBy: "Anita Rao",
     status: "completed",
   },
   {
@@ -126,8 +149,8 @@ export const initialSessions: ParkingSession[] = [
     amountPaidAtExit: 8,
     paymentModeAtExit: "online",
     totalAmount: 8,
-    recordedBy: "Owner",
-    exitRecordedBy: "Owner",
+    recordedBy: "Anita Rao",
+    exitRecordedBy: "Anita Rao",
     status: "completed",
   },
   {
@@ -141,8 +164,8 @@ export const initialSessions: ParkingSession[] = [
     amountPaidAtExit: 35,
     paymentModeAtExit: "online",
     totalAmount: 35,
-    recordedBy: "Employee",
-    exitRecordedBy: "Employee",
+    recordedBy: "Vikram Nair",
+    exitRecordedBy: "Vikram Nair",
     status: "completed",
   },
   {
@@ -156,8 +179,8 @@ export const initialSessions: ParkingSession[] = [
     amountPaidAtExit: 18,
     paymentModeAtExit: "cash",
     totalAmount: 18,
-    recordedBy: "Owner",
-    exitRecordedBy: "Employee",
+    recordedBy: "Anita Rao",
+    exitRecordedBy: "Vikram Nair",
     status: "completed",
   },
   {
@@ -172,8 +195,8 @@ export const initialSessions: ParkingSession[] = [
     amountPaidAtExit: -15,
     paymentModeAtExit: "cash",
     totalAmount: 35,
-    recordedBy: "Employee",
-    exitRecordedBy: "Employee",
+    recordedBy: "Vikram Nair",
+    exitRecordedBy: "Vikram Nair",
     status: "completed",
   },
   // Earlier this month (not today) — gives "This Month So Far" real history
@@ -188,8 +211,8 @@ export const initialSessions: ParkingSession[] = [
     amountPaidAtExit: 30,
     paymentModeAtExit: "cash",
     totalAmount: 30,
-    recordedBy: "Employee",
-    exitRecordedBy: "Employee",
+    recordedBy: "Vikram Nair",
+    exitRecordedBy: "Vikram Nair",
     status: "completed",
   },
   {
@@ -203,8 +226,8 @@ export const initialSessions: ParkingSession[] = [
     amountPaidAtExit: 18,
     paymentModeAtExit: "online",
     totalAmount: 18,
-    recordedBy: "Owner",
-    exitRecordedBy: "Owner",
+    recordedBy: "Anita Rao",
+    exitRecordedBy: "Anita Rao",
     status: "completed",
   },
   {
@@ -218,8 +241,8 @@ export const initialSessions: ParkingSession[] = [
     amountPaidAtExit: 12,
     paymentModeAtExit: "cash",
     totalAmount: 12,
-    recordedBy: "Employee",
-    exitRecordedBy: "Owner",
+    recordedBy: "Vikram Nair",
+    exitRecordedBy: "Anita Rao",
     status: "completed",
   },
   {
@@ -233,8 +256,8 @@ export const initialSessions: ParkingSession[] = [
     amountPaidAtExit: 8,
     paymentModeAtExit: "online",
     totalAmount: 8,
-    recordedBy: "Employee",
-    exitRecordedBy: "Employee",
+    recordedBy: "Vikram Nair",
+    exitRecordedBy: "Vikram Nair",
     status: "completed",
   },
   {
@@ -248,8 +271,8 @@ export const initialSessions: ParkingSession[] = [
     amountPaidAtExit: 40,
     paymentModeAtExit: "cash",
     totalAmount: 40,
-    recordedBy: "Owner",
-    exitRecordedBy: "Owner",
+    recordedBy: "Anita Rao",
+    exitRecordedBy: "Anita Rao",
     status: "completed",
   },
 ];
@@ -260,7 +283,7 @@ export const initialExpenses: Expense[] = [
     amount: 30,
     title: "Tea/Snacks",
     expenseDate: hoursAgo(4),
-    recordedBy: "Employee",
+    recordedBy: "Vikram Nair",
   },
   {
     id: "e2",
@@ -268,21 +291,21 @@ export const initialExpenses: Expense[] = [
     title: "Maintenance",
     note: "Barrier rope replacement",
     expenseDate: hoursAgo(10),
-    recordedBy: "Owner",
+    recordedBy: "Anita Rao",
   },
   {
     id: "e3",
     amount: 40,
     title: "Generator Fuel",
     expenseDate: daysAgoAt(0.7, 9),
-    recordedBy: "Owner",
+    recordedBy: "Anita Rao",
   },
   {
     id: "e4",
     amount: 25,
     title: "Cleaning Supplies",
     expenseDate: daysAgoAt(0.35, 9),
-    recordedBy: "Employee",
+    recordedBy: "Vikram Nair",
   },
 ];
 
@@ -311,7 +334,7 @@ export const initialMembers: Member[] = [
     feeAmount: 500,
     startDate: plainDaysAgo(20),
     expiryDate: plainDaysFromNow(10),
-    recordedBy: "Owner",
+    recordedBy: "Anita Rao",
   },
   {
     id: "m2",
@@ -323,7 +346,7 @@ export const initialMembers: Member[] = [
     feeAmount: 800,
     startDate: plainDaysAgo(27),
     expiryDate: plainDaysFromNow(3),
-    recordedBy: "Owner",
+    recordedBy: "Anita Rao",
   },
   {
     id: "m3",
@@ -335,12 +358,12 @@ export const initialMembers: Member[] = [
     feeAmount: 500,
     startDate: plainDaysAgo(40),
     expiryDate: plainDaysAgo(10),
-    recordedBy: "Employee",
+    recordedBy: "Vikram Nair",
   },
 ];
 
 export const initialMemberPayments: MemberPayment[] = [
-  { id: "mp1", memberId: "m1", amount: 500, paymentMode: "online", paidAt: plainDaysAgo(20), type: "signup", recordedBy: "Owner" },
-  { id: "mp2", memberId: "m2", amount: 800, paymentMode: "cash", paidAt: plainDaysAgo(27), type: "signup", recordedBy: "Owner" },
-  { id: "mp3", memberId: "m3", amount: 500, paymentMode: "cash", paidAt: plainDaysAgo(40), type: "signup", recordedBy: "Employee" },
+  { id: "mp1", memberId: "m1", amount: 500, paymentMode: "online", paidAt: plainDaysAgo(20), type: "signup", recordedBy: "Anita Rao" },
+  { id: "mp2", memberId: "m2", amount: 800, paymentMode: "cash", paidAt: plainDaysAgo(27), type: "signup", recordedBy: "Anita Rao" },
+  { id: "mp3", memberId: "m3", amount: 500, paymentMode: "cash", paidAt: plainDaysAgo(40), type: "signup", recordedBy: "Vikram Nair" },
 ];

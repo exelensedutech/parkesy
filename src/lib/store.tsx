@@ -8,7 +8,15 @@ import {
   initialSessions,
   vehicleTypes as initialVehicleTypes,
 } from "./mockData";
-import { checkPassword, createDeviceAccount, getDeviceAccount, updateDevicePassword } from "./mockAuth";
+import {
+  checkPassword,
+  createDeviceAccount,
+  getDeviceAccount,
+  resolveRole,
+  updateDeviceProfile,
+  updateDevicePassword,
+} from "./mockAuth";
+import { addTeamInvite as addTeamInviteToStorage, getTeamInvites, removeTeamInvite as removeTeamInviteFromStorage } from "./teamInvites";
 import { addMonths } from "./calc";
 import { getMembershipPrice } from "./membership";
 import {
@@ -21,6 +29,7 @@ import {
   PaymentMode,
   RateSlab,
   Role,
+  TeamInvite,
   VehicleNumberCaptureMode,
   VehicleType,
 } from "./types";
@@ -53,11 +62,17 @@ interface AppState {
   hasAccount: boolean;
   role: Role;
   userName: string;
+  userAddress: Address;
   phone: string;
-  signup: (phone: string, password: string) => void;
+  signup: (phone: string, password: string, name: string) => void;
   login: (password: string) => boolean;
   logout: () => void;
   resetPassword: (newPassword: string) => void;
+  updateUserProfile: (name: string, address: Address) => void;
+  teamInvites: TeamInvite[];
+  findInviteByPhone: (phone: string) => TeamInvite | undefined;
+  addTeamInvite: (name: string, phone: string, pin: string, role: Role) => void;
+  removeTeamInvite: (id: string) => void;
   businessName: string;
   businessAddress: Address;
   businessPhone: string;
@@ -115,6 +130,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [hasAccount, setHasAccount] = useState(false);
   const [role, setRole] = useState<Role>("employee");
   const [userName, setUserName] = useState("");
+  const [userAddress, setUserAddress] = useState<Address>({});
   const [phone, setPhone] = useState("");
 
   // Starts at the default (not "") so server and first client paint match;
@@ -131,12 +147,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
   const [memberPayments, setMemberPayments] = useState<MemberPayment[]>([]);
+  const [teamInvites, setTeamInvites] = useState<TeamInvite[]>([]);
 
   useEffect(() => {
     setSessions(initialSessions);
     setExpenses(initialExpenses);
     setMembers(initialMembers);
     setMemberPayments(initialMemberPayments);
+    setTeamInvites(getTeamInvites());
 
     const savedName = window.localStorage.getItem(BUSINESS_NAME_STORAGE_KEY);
     if (savedName) setBusinessNameState(savedName);
@@ -166,6 +184,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       setPhone(account.phone);
       setRole(account.role);
       setUserName(account.name);
+      setUserAddress(account.address ?? {});
       if (window.localStorage.getItem(SESSION_STORAGE_KEY) === "1") {
         setIsAuthenticated(true);
       }
@@ -179,6 +198,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     return members.find((m) => m.vehicleNumber === normalized && new Date(m.expiryDate).getTime() >= Date.now());
   };
 
+  const findInviteByPhone = (phoneToFind: string): TeamInvite | undefined => {
+    return teamInvites.find((inv) => inv.phone === phoneToFind.trim());
+  };
+
   const value = useMemo<AppState>(
     () => ({
       authChecked,
@@ -186,9 +209,16 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       hasAccount,
       role,
       userName,
+      userAddress,
       phone,
-      signup: (newPhone, password) => {
-        const account = createDeviceAccount(newPhone, password);
+      signup: (newPhone, password, name) => {
+        const invite = findInviteByPhone(newPhone);
+        const role_ = invite ? invite.role : resolveRole(newPhone);
+        const account = createDeviceAccount(newPhone, password, name, role_);
+        if (invite) {
+          removeTeamInviteFromStorage(invite.id);
+          setTeamInvites((prev) => prev.filter((inv) => inv.id !== invite.id));
+        }
         setHasAccount(true);
         setPhone(account.phone);
         setRole(account.role);
@@ -204,6 +234,22 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       logout: () => {
         window.localStorage.removeItem(SESSION_STORAGE_KEY);
         setIsAuthenticated(false);
+      },
+      updateUserProfile: (name, address) => {
+        const updated = updateDeviceProfile(name, address);
+        if (!updated) return;
+        setUserName(updated.name);
+        setUserAddress(address);
+      },
+      teamInvites,
+      findInviteByPhone,
+      addTeamInvite: (name, phoneNum, pin, inviteRole) => {
+        const invite = addTeamInviteToStorage(name, phoneNum, pin, inviteRole);
+        setTeamInvites((prev) => [invite, ...prev]);
+      },
+      removeTeamInvite: (id) => {
+        removeTeamInviteFromStorage(id);
+        setTeamInvites((prev) => prev.filter((inv) => inv.id !== id));
       },
       resetPassword: (newPassword) => {
         updateDevicePassword(newPassword);
@@ -373,6 +419,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       hasAccount,
       role,
       userName,
+      userAddress,
       phone,
       businessName,
       businessAddress,
@@ -385,6 +432,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       expenses,
       members,
       memberPayments,
+      teamInvites,
     ]
   );
 

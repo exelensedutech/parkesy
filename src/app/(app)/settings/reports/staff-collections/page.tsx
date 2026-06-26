@@ -21,10 +21,10 @@ export default function StaffCollectionsPage() {
   const [from, setFrom] = useState<Dayjs>(dayjs().startOf("month"));
   const [to, setTo] = useState<Dayjs>(dayjs());
 
-  if (role !== "owner") {
+  if (role !== "admin") {
     return (
       <Typography variant="body1" sx={{ mt: 4 }} align="center" color="text.secondary">
-        Reports are only visible to the Owner.
+        Reports are only visible to the Admin.
       </Typography>
     );
   }

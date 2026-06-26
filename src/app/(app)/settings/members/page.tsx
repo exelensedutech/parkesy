@@ -35,10 +35,10 @@ export default function MembersPage() {
   const [addOpen, setAddOpen] = useState(false);
   const [renewing, setRenewing] = useState<Member | null>(null);
 
-  if (role !== "owner") {
+  if (role !== "admin") {
     return (
       <Typography variant="body1" sx={{ mt: 4 }} align="center" color="text.secondary">
-        Members are only visible to the Owner.
+        Members are only visible to the Admin.
       </Typography>
     );
   }

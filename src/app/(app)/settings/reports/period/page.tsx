@@ -56,6 +56,10 @@ export default function PeriodReportPage() {
   const [weeklyFrom, setWeeklyFrom] = useState<Dayjs>(dayjs());
   const [weeklyTo, setWeeklyTo] = useState<Dayjs>(dayjs().add(6, "day"));
   const [monthlyAnchor, setMonthlyAnchor] = useState<Dayjs>(dayjs());
+  const [dailyOpen, setDailyOpen] = useState(false);
+  const [weeklyFromOpen, setWeeklyFromOpen] = useState(false);
+  const [weeklyToOpen, setWeeklyToOpen] = useState(false);
+  const [monthlyOpen, setMonthlyOpen] = useState(false);
 
   const weeklyMaxTo = weeklyFrom.add(6, "day");
 
@@ -74,10 +78,10 @@ export default function PeriodReportPage() {
     }
   };
 
-  if (role !== "owner") {
+  if (role !== "admin") {
     return (
       <Typography variant="body1" sx={{ mt: 4 }} align="center" color="text.secondary">
-        Reports are only visible to the Owner.
+        Reports are only visible to the Admin.
       </Typography>
     );
   }
@@ -177,7 +181,13 @@ export default function PeriodReportPage() {
           label="Date"
           value={dailyDate}
           onChange={(value) => value && setDailyDate(value)}
-          slotProps={{ textField: { fullWidth: true } }}
+          open={dailyOpen}
+          onOpen={() => setDailyOpen(true)}
+          onClose={() => setDailyOpen(false)}
+          slotProps={{
+            textField: { fullWidth: true, onClick: () => setDailyOpen(true) },
+            field: { readOnly: true },
+          }}
           sx={{ mb: 1, width: "100%" }}
         />
       )}
@@ -188,7 +198,13 @@ export default function PeriodReportPage() {
               label="From"
               value={weeklyFrom}
               onChange={(value) => value && handleWeeklyFromChange(value)}
-              slotProps={{ textField: { fullWidth: true } }}
+              open={weeklyFromOpen}
+              onOpen={() => setWeeklyFromOpen(true)}
+              onClose={() => setWeeklyFromOpen(false)}
+              slotProps={{
+                textField: { fullWidth: true, onClick: () => setWeeklyFromOpen(true) },
+                field: { readOnly: true },
+              }}
             />
           </Grid>
           <Grid size={6}>
@@ -198,7 +214,13 @@ export default function PeriodReportPage() {
               onChange={(value) => value && handleWeeklyToChange(value)}
               minDate={weeklyFrom}
               maxDate={weeklyMaxTo}
-              slotProps={{ textField: { fullWidth: true } }}
+              open={weeklyToOpen}
+              onOpen={() => setWeeklyToOpen(true)}
+              onClose={() => setWeeklyToOpen(false)}
+              slotProps={{
+                textField: { fullWidth: true, onClick: () => setWeeklyToOpen(true) },
+                field: { readOnly: true },
+              }}
             />
           </Grid>
         </Grid>
@@ -210,7 +232,13 @@ export default function PeriodReportPage() {
           onChange={(value) => value && setMonthlyAnchor(value)}
           views={["year", "month"]}
           openTo="month"
-          slotProps={{ textField: { fullWidth: true } }}
+          open={monthlyOpen}
+          onOpen={() => setMonthlyOpen(true)}
+          onClose={() => setMonthlyOpen(false)}
+          slotProps={{
+            textField: { fullWidth: true, onClick: () => setMonthlyOpen(true) },
+            field: { readOnly: true },
+          }}
           sx={{ mb: 1, width: "100%" }}
         />
       )}

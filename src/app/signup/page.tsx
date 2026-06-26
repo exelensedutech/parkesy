@@ -14,6 +14,7 @@ import Snackbar from "@mui/material/Snackbar";
 import Alert from "@mui/material/Alert";
 import LocalParkingIcon from "@mui/icons-material/LocalParking";
 import { useAppStore } from "@/lib/store";
+import { TeamInvite } from "@/lib/types";
 import OtpInput from "@/components/OtpInput";
 
 const RESEND_SECONDS = 30;
@@ -24,11 +25,14 @@ type Step = "phone" | "otp" | "password";
 
 export default function SignupPage() {
   const router = useRouter();
-  const { authChecked, isAuthenticated, signup } = useAppStore();
+  const { authChecked, isAuthenticated, signup, findInviteByPhone } = useAppStore();
   const [step, setStep] = useState<Step>("phone");
+  const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [otp, setOtp] = useState<string[]>(EMPTY_4);
+  const [otpError, setOtpError] = useState("");
   const [resendIn, setResendIn] = useState(RESEND_SECONDS);
+  const [inviteMatch, setInviteMatch] = useState<TeamInvite | undefined>(undefined);
 
   const [password, setPassword] = useState<string[]>(EMPTY_6);
   const [confirmPassword, setConfirmPassword] = useState<string[]>(EMPTY_6);
@@ -48,17 +52,28 @@ export default function SignupPage() {
   }, [step, resendIn]);
 
   const phoneValid = /^\d{10}$/.test(phone);
+  const nameValid = name.trim().length > 0;
 
   const handleSendOtp = () => {
-    if (!phoneValid) return;
+    if (!phoneValid || !nameValid) return;
+    setInviteMatch(findInviteByPhone(phone));
     setOtp(EMPTY_4);
+    setOtpError("");
     setResendIn(RESEND_SECONDS);
     setStep("otp");
   };
 
   const handleVerifyOtp = (code: string) => {
     if (code.length !== 4) return;
-    // No backend yet — any 4-digit code is accepted as the verified OTP.
+    if (inviteMatch) {
+      if (code !== inviteMatch.pin) {
+        setOtpError("Incorrect PIN — check with your admin");
+        setOtp(EMPTY_4);
+        return;
+      }
+    }
+    // No backend yet — without an invite, any 4-digit code is accepted as the verified OTP.
+    setOtpError("");
     setPassword(EMPTY_6);
     setConfirmPassword(EMPTY_6);
     setPasswordError("");
@@ -77,7 +92,7 @@ export default function SignupPage() {
       setConfirmPassword(EMPTY_6);
       return;
     }
-    signup(phone, p);
+    signup(phone, p, name.trim());
     setShowToast(true);
     setTimeout(() => router.replace("/login"), 1400);
   };
@@ -169,13 +184,19 @@ export default function SignupPage() {
                 Sign up
               </Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                Enter your mobile number to get started
+                Enter your name and mobile number to get started
               </Typography>
               <Stack spacing={3}>
                 <TextField
-                  label="Mobile number"
+                  label="Your name"
                   fullWidth
                   autoFocus
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                />
+                <TextField
+                  label="Mobile number"
+                  fullWidth
                   value={phone}
                   onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
                   slotProps={{
@@ -190,7 +211,7 @@ export default function SignupPage() {
                   variant="contained"
                   size="large"
                   fullWidth
-                  disabled={!phoneValid}
+                  disabled={!phoneValid || !nameValid}
                   onClick={handleSendOtp}
                   sx={{ borderRadius: 6, py: 1.3, fontWeight: 600, boxShadow: "0 6px 16px rgba(0,101,143,0.35)" }}
                 >
@@ -206,11 +227,11 @@ export default function SignupPage() {
           <Fade in={step === "otp"} unmountOnExit>
             <Box sx={{ display: step === "otp" ? "block" : "none" }}>
               <Typography variant="h6" sx={{ fontWeight: 600, mb: 0.5 }}>
-                Verify your number
+                {inviteMatch ? "Enter your invite PIN" : "Verify your number"}
               </Typography>
               <Stack direction="row" spacing={0.5} sx={{ alignItems: "baseline", mb: 3 }}>
                 <Typography variant="body2" color="text.secondary">
-                  Code sent to +91 {phone}
+                  {inviteMatch ? "Your admin shared a 4-digit PIN with you" : `Code sent to +91 ${phone}`}
                 </Typography>
                 <Link component="button" variant="body2" onClick={() => setStep("phone")}>
                   Change
@@ -219,6 +240,11 @@ export default function SignupPage() {
 
               <Stack spacing={3}>
                 <OtpInput value={otp} onChange={setOtp} onComplete={handleVerifyOtp} length={4} />
+                {otpError && (
+                  <Typography variant="caption" color="error" align="center">
+                    {otpError}
+                  </Typography>
+                )}
                 <Button
                   variant="contained"
                   size="large"
@@ -228,15 +254,17 @@ export default function SignupPage() {
                 >
                   Verify
                 </Button>
-                <Typography variant="body2" align="center" color="text.secondary">
-                  {resendIn > 0 ? (
-                    `Resend OTP in ${resendIn}s`
-                  ) : (
-                    <Link component="button" onClick={() => setResendIn(RESEND_SECONDS)}>
-                      Resend OTP
-                    </Link>
-                  )}
-                </Typography>
+                {!inviteMatch && (
+                  <Typography variant="body2" align="center" color="text.secondary">
+                    {resendIn > 0 ? (
+                      `Resend OTP in ${resendIn}s`
+                    ) : (
+                      <Link component="button" onClick={() => setResendIn(RESEND_SECONDS)}>
+                        Resend OTP
+                      </Link>
+                    )}
+                  </Typography>
+                )}
               </Stack>
             </Box>
           </Fade>

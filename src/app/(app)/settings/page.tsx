@@ -7,6 +7,7 @@ import Stack from "@mui/material/Stack";
 import AssessmentIcon from "@mui/icons-material/Assessment";
 import StoreIcon from "@mui/icons-material/Store";
 import CardMembershipIcon from "@mui/icons-material/CardMembership";
+import GroupIcon from "@mui/icons-material/Group";
 import TuneIcon from "@mui/icons-material/Tune";
 import EditBusinessDetailsSheet from "@/components/EditBusinessDetailsSheet";
 import EditVehicleTypeSheet from "@/components/EditVehicleTypeSheet";
@@ -20,7 +21,7 @@ import { VEHICLE_COLORS } from "@/lib/colors";
 const PRIMARY = "#00658F";
 
 export default function SettingsPage() {
-  const { role, businessName, businessPhone, vehicleTypes, members } = useAppStore();
+  const { role, businessName, businessPhone, vehicleTypes, members, teamInvites } = useAppStore();
   const router = useRouter();
   const [editingDetails, setEditingDetails] = useState(false);
   const [editingVehicleType, setEditingVehicleType] = useState<VehicleType | null>(null);
@@ -28,10 +29,10 @@ export default function SettingsPage() {
 
   const activeMemberCount = members.filter((m) => new Date(m.expiryDate).getTime() >= Date.now()).length;
 
-  if (role !== "owner") {
+  if (role !== "admin") {
     return (
       <Typography variant="body1" sx={{ mt: 4 }} align="center" color="text.secondary">
-        Settings are only visible to the Owner.
+        Settings are only visible to the Admin.
       </Typography>
     );
   }
@@ -89,6 +90,19 @@ export default function SettingsPage() {
           title="Members"
           subtitle={`${activeMemberCount} active membership${activeMemberCount === 1 ? "" : "s"}`}
           onClick={() => router.push("/settings/members")}
+        />
+      </Stack>
+
+      <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
+        Team
+      </Typography>
+      <Stack spacing={1.5} sx={{ mb: 2.5 }}>
+        <SettingsRow
+          icon={<GroupIcon />}
+          color={PRIMARY}
+          title="Team Members"
+          subtitle={`${teamInvites.length} invited`}
+          onClick={() => router.push("/settings/team")}
         />
       </Stack>
 

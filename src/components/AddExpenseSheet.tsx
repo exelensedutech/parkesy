@@ -51,6 +51,7 @@ export default function AddExpenseSheet({
   const [amount, setAmount] = useState("");
   const [note, setNote] = useState("");
   const [date, setDate] = useState<Dayjs>(today);
+  const [dateOpen, setDateOpen] = useState(false);
   const [error, setError] = useState("");
 
   const isEditing = Boolean(editingExpense);
@@ -140,7 +141,13 @@ export default function AddExpenseSheet({
               onChange={(newValue) => newValue && setDate(newValue)}
               minDate={monthStart}
               maxDate={monthEnd}
-              slotProps={{ textField: { fullWidth: true } }}
+              open={dateOpen}
+              onOpen={() => setDateOpen(true)}
+              onClose={() => setDateOpen(false)}
+              slotProps={{
+                textField: { fullWidth: true, onClick: () => setDateOpen(true) },
+                field: { readOnly: true },
+              }}
               sx={{ mb: 2, width: "100%" }}
             />
 

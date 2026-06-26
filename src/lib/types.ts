@@ -1,4 +1,13 @@
-export type Role = "owner" | "employee";
+export type Role = "admin" | "employee";
+
+export interface TeamInvite {
+  id: string;
+  name: string;
+  phone: string;
+  pin: string; // 4-digit — shared with the invitee in place of an OTP
+  role: Role;
+  createdAt: string; // ISO
+}
 
 export type VehicleNumberCaptureMode = "full" | "last4";
 

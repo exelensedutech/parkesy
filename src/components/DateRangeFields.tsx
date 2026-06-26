@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Grid from "@mui/material/Grid";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { Dayjs } from "dayjs";
@@ -15,6 +16,9 @@ export default function DateRangeFields({
   onFromChange: (value: Dayjs) => void;
   onToChange: (value: Dayjs) => void;
 }) {
+  const [fromOpen, setFromOpen] = useState(false);
+  const [toOpen, setToOpen] = useState(false);
+
   return (
     <Grid container spacing={1.5} sx={{ mb: 3 }}>
       <Grid size={6}>
@@ -22,7 +26,13 @@ export default function DateRangeFields({
           label="From"
           value={from}
           onChange={(value) => value && onFromChange(value)}
-          slotProps={{ textField: { fullWidth: true } }}
+          open={fromOpen}
+          onOpen={() => setFromOpen(true)}
+          onClose={() => setFromOpen(false)}
+          slotProps={{
+            textField: { fullWidth: true, onClick: () => setFromOpen(true) },
+            field: { readOnly: true },
+          }}
         />
       </Grid>
       <Grid size={6}>
@@ -30,7 +40,13 @@ export default function DateRangeFields({
           label="To"
           value={to}
           onChange={(value) => value && onToChange(value)}
-          slotProps={{ textField: { fullWidth: true } }}
+          open={toOpen}
+          onOpen={() => setToOpen(true)}
+          onClose={() => setToOpen(false)}
+          slotProps={{
+            textField: { fullWidth: true, onClick: () => setToOpen(true) },
+            field: { readOnly: true },
+          }}
         />
       </Grid>
     </Grid>
