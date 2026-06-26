@@ -42,6 +42,7 @@ function IconRow({ icon, color, label }: { icon: React.ReactNode; color: string;
 
 function usePhotoCapture() {
   const [photoUrl, setPhotoUrl] = useState<string | undefined>();
+  const [photoFile, setPhotoFile] = useState<File | undefined>();
   const [previewOpen, setPreviewOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -50,10 +51,12 @@ function usePhotoCapture() {
     if (!file) return;
     if (photoUrl) URL.revokeObjectURL(photoUrl);
     setPhotoUrl(URL.createObjectURL(file));
+    setPhotoFile(file);
   };
   const handleDelete = () => {
     if (photoUrl) URL.revokeObjectURL(photoUrl);
     setPhotoUrl(undefined);
+    setPhotoFile(undefined);
     setPreviewOpen(false);
   };
   const handleRetake = () => {
@@ -63,9 +66,10 @@ function usePhotoCapture() {
   const reset = () => {
     if (photoUrl) URL.revokeObjectURL(photoUrl);
     setPhotoUrl(undefined);
+    setPhotoFile(undefined);
   };
 
-  return { photoUrl, previewOpen, setPreviewOpen, fileInputRef, handleSelected, handleDelete, handleRetake, reset };
+  return { photoUrl, photoFile, previewOpen, setPreviewOpen, fileInputRef, handleSelected, handleDelete, handleRetake, reset };
 }
 
 type PhotoCapture = ReturnType<typeof usePhotoCapture>;
@@ -89,7 +93,7 @@ function PhotoPreviewDialog({ photo, label }: { photo: PhotoCapture; label: stri
 }
 
 export default function AddMemberSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const { vehicleTypes, addMember } = useAppStore();
+  const { vehicleTypes, addMember, uploadPhoto } = useAppStore();
   const [vehicleTypeId, setVehicleTypeId] = useState(vehicleTypes[0].id);
   const [vehicleNumber, setVehicleNumber] = useState("");
   const [customerName, setCustomerName] = useState("");
@@ -118,6 +122,10 @@ export default function AddMemberSheet({ open, onClose }: { open: boolean; onClo
     try {
       const hasAddress = Object.values(customerAddress).some((v) => v && v.trim());
       const hasIdProof = idProofNumber.trim() || idPhoto.photoUrl;
+      const [uploadedVehiclePhoto, uploadedIdPhoto] = await Promise.all([
+        vehiclePhoto.photoFile ? uploadPhoto(vehiclePhoto.photoFile) : Promise.resolve(undefined),
+        idPhoto.photoFile ? uploadPhoto(idPhoto.photoFile) : Promise.resolve(undefined),
+      ]);
       await addMember({
         vehicleNumber: vehicleNumber.trim().toUpperCase(),
         vehicleTypeId,
@@ -125,9 +133,9 @@ export default function AddMemberSheet({ open, onClose }: { open: boolean; onClo
         customerPhone: customerPhone.trim() || undefined,
         customerAddress: hasAddress ? customerAddress : undefined,
         idProof: hasIdProof
-          ? { type: idProofType, number: idProofNumber.trim() || undefined, photoUrl: idPhoto.photoUrl }
+          ? { type: idProofType, number: idProofNumber.trim() || undefined, photoUrl: uploadedIdPhoto }
           : undefined,
-        vehiclePhotoUrl: vehiclePhoto.photoUrl,
+        vehiclePhotoUrl: uploadedVehiclePhoto,
         durationMonths,
         paymentMode,
       });

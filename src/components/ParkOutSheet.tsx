@@ -40,11 +40,12 @@ export default function ParkOutSheet({
   onClose: () => void;
   onCompleted: (confirmation: ParkExitConfirmation) => void;
 }) {
-  const { vehicleTypes, completeSession, updateSessionVehicleNumber } = useAppStore();
+  const { vehicleTypes, completeSession, updateSessionVehicleNumber, getSignedPhotoUrl } = useAppStore();
   const [paymentMode, setPaymentMode] = useState<PaymentMode>("cash");
   const [hours, setHours] = useState(0);
   const [completing, setCompleting] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [signedPhotoUrl, setSignedPhotoUrl] = useState<string | null>(null);
   const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null);
   const [editingNumber, setEditingNumber] = useState(false);
   const [numberDraft, setNumberDraft] = useState("");
@@ -65,6 +66,14 @@ export default function ParkOutSheet({
     // Only reset when a different session is opened, not on every store re-render.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session?.id]);
+
+  useEffect(() => {
+    setSignedPhotoUrl(null);
+    if (session?.vehiclePhotoUrl) {
+      getSignedPhotoUrl(session.vehiclePhotoUrl).then(setSignedPhotoUrl);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.vehiclePhotoUrl]);
 
   if (!session) return null;
 
@@ -121,9 +130,9 @@ export default function ParkOutSheet({
             <Typography variant="h6">{session.tokenCode}</Typography>
           </Stack>
           <Stack direction="row" spacing={0.5} sx={{ alignItems: "center" }}>
-            {session.vehiclePhotoUrl && (
+            {signedPhotoUrl && (
               <Avatar
-                src={session.vehiclePhotoUrl}
+                src={signedPhotoUrl}
                 variant="rounded"
                 sx={{ width: 48, height: 48, cursor: "pointer" }}
                 onClick={() => setPreviewOpen(true)}
@@ -233,8 +242,8 @@ export default function ParkOutSheet({
 
       <Dialog open={previewOpen} onClose={() => setPreviewOpen(false)} maxWidth="xs" fullWidth>
         <DialogContent sx={{ p: 0 }}>
-          {session.vehiclePhotoUrl && (
-            <Box component="img" src={session.vehiclePhotoUrl} alt="Vehicle" sx={{ width: "100%", display: "block" }} />
+          {signedPhotoUrl && (
+            <Box component="img" src={signedPhotoUrl} alt="Vehicle" sx={{ width: "100%", display: "block" }} />
           )}
         </DialogContent>
       </Dialog>

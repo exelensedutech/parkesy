@@ -29,7 +29,8 @@ import { PaymentMode } from "@/lib/types";
 import { VEHICLE_COLORS, CASH_COLOR, ONLINE_COLOR } from "@/lib/colors";
 
 export default function ParkInForm() {
-  const { vehicleTypes, startSession, findActiveMember, vehicleNumberCaptureMode, collectAtCheckIn } = useAppStore();
+  const { vehicleTypes, startSession, findActiveMember, uploadPhoto, vehicleNumberCaptureMode, collectAtCheckIn } =
+    useAppStore();
   const isLast4Mode = vehicleNumberCaptureMode === "last4";
   const [vehicleTypeId, setVehicleTypeId] = useState(vehicleTypes[0].id);
   const [vehicleNumber, setVehicleNumber] = useState("");
@@ -38,6 +39,7 @@ export default function ParkInForm() {
   const [numberError, setNumberError] = useState("");
   const [confirmation, setConfirmation] = useState<ParkConfirmation | null>(null);
   const [photoUrl, setPhotoUrl] = useState<string | undefined>();
+  const [photoFile, setPhotoFile] = useState<File | undefined>();
   const [previewOpen, setPreviewOpen] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -52,11 +54,13 @@ export default function ParkInForm() {
     // Only one photo per vehicle — discard whatever was captured before.
     if (photoUrl) URL.revokeObjectURL(photoUrl);
     setPhotoUrl(URL.createObjectURL(file));
+    setPhotoFile(file);
   };
 
   const handleDeletePhoto = () => {
     if (photoUrl) URL.revokeObjectURL(photoUrl);
     setPhotoUrl(undefined);
+    setPhotoFile(undefined);
     setPreviewOpen(false);
   };
 
@@ -79,12 +83,13 @@ export default function ParkInForm() {
     const finalVehicleNumber = isCycle ? "" : vehicleNumber.trim().toUpperCase();
     setParking(true);
     try {
+      const uploadedPhotoPath = photoFile ? await uploadPhoto(photoFile) : undefined;
       const tokenCode = await startSession(
         vehicleTypeId,
         finalVehicleNumber,
         paidValue,
         paidValue > 0 ? paymentMode : undefined,
-        photoUrl
+        uploadedPhotoPath
       );
       setConfirmation({
         tokenCode,
@@ -96,7 +101,9 @@ export default function ParkInForm() {
       setVehicleNumber("");
       setAmountPaid("");
       setNumberError("");
+      if (photoUrl) URL.revokeObjectURL(photoUrl);
       setPhotoUrl(undefined);
+      setPhotoFile(undefined);
     } catch {
       setNumberError("Could not park the vehicle — please try again");
     } finally {

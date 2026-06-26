@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { supabase } from "./supabaseClient";
+import { compressImage } from "./imageCompress";
 import {
   Address,
   Expense,
@@ -241,6 +242,8 @@ interface AppState {
     note: string | undefined,
     expenseDate: string
   ) => Promise<void>;
+  uploadPhoto: (file: File) => Promise<string>;
+  getSignedPhotoUrl: (path: string) => Promise<string | null>;
 }
 
 const AppContext = createContext<AppState | null>(null);
@@ -622,6 +625,19 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           return;
         }
         setExpenses((prev) => prev.map((e) => (e.id === id ? mapExpenseRow(data, profilesById) : e)));
+      },
+      uploadPhoto: async (file) => {
+        if (!businessId) throw new Error("No business context");
+        const compressed = await compressImage(file);
+        const path = `${businessId}/${crypto.randomUUID()}.jpg`;
+        const { error } = await supabase.storage.from("photos").upload(path, compressed, { contentType: "image/jpeg" });
+        if (error) throw error;
+        return path;
+      },
+      getSignedPhotoUrl: async (path) => {
+        const { data, error } = await supabase.storage.from("photos").createSignedUrl(path, 3600);
+        if (error || !data) return null;
+        return data.signedUrl;
       },
     }),
     [
