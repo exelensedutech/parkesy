@@ -4,56 +4,41 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
+import TextField from "@mui/material/TextField";
 import Button from "@mui/material/Button";
+import InputAdornment from "@mui/material/InputAdornment";
 import Link from "@mui/material/Link";
 import Stack from "@mui/material/Stack";
-import Fade from "@mui/material/Fade";
 import LocalParkingIcon from "@mui/icons-material/LocalParking";
 import { useAppStore } from "@/lib/store";
 import OtpInput from "@/components/OtpInput";
 
-const RESEND_SECONDS = 30;
-const EMPTY_4 = ["", "", "", ""];
 const EMPTY_6 = ["", "", "", "", "", ""];
-
-type Step = "password" | "otp" | "new-password";
 
 export default function LoginPage() {
   const router = useRouter();
-  const { authChecked, isAuthenticated, hasAccount, phone, login, resetPassword } = useAppStore();
-  const [step, setStep] = useState<Step>("password");
+  const { authChecked, isAuthenticated, login } = useAppStore();
 
+  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState<string[]>(EMPTY_6);
   const [loginError, setLoginError] = useState(false);
-
-  const [otp, setOtp] = useState<string[]>(EMPTY_4);
-  const [resendIn, setResendIn] = useState(RESEND_SECONDS);
-
-  const [newPassword, setNewPassword] = useState<string[]>(EMPTY_6);
-  const [confirmPassword, setConfirmPassword] = useState<string[]>(EMPTY_6);
-  const [newPasswordError, setNewPasswordError] = useState("");
+  const [loggingIn, setLoggingIn] = useState(false);
 
   useEffect(() => {
-    if (!authChecked) return;
-    if (isAuthenticated) {
+    if (authChecked && isAuthenticated) {
       router.replace("/");
-      return;
     }
-    if (!hasAccount) {
-      router.replace("/signup");
-    }
-  }, [authChecked, isAuthenticated, hasAccount, router]);
+  }, [authChecked, isAuthenticated, router]);
 
-  useEffect(() => {
-    if (step !== "otp" || resendIn === 0) return;
-    const timer = setTimeout(() => setResendIn((s) => s - 1), 1000);
-    return () => clearTimeout(timer);
-  }, [step, resendIn]);
+  const phoneValid = /^\d{10}$/.test(phone);
 
-  const handleLogin = (code?: string) => {
+  const handleLogin = async (code?: string) => {
     const value = code ?? password.join("");
-    if (value.length !== 6) return;
-    if (login(value)) {
+    if (!phoneValid || value.length !== 6 || loggingIn) return;
+    setLoggingIn(true);
+    const ok = await login(phone, value);
+    setLoggingIn(false);
+    if (ok) {
       router.replace("/");
     } else {
       setLoginError(true);
@@ -61,40 +46,7 @@ export default function LoginPage() {
     }
   };
 
-  const goToForgotPassword = () => {
-    setOtp(EMPTY_4);
-    setResendIn(RESEND_SECONDS);
-    setStep("otp");
-  };
-
-  const handleVerifyOtp = (code: string) => {
-    if (code.length !== 4) return;
-    // No backend yet — any 4-digit code is accepted as the verified OTP.
-    setNewPassword(EMPTY_6);
-    setConfirmPassword(EMPTY_6);
-    setNewPasswordError("");
-    setStep("new-password");
-  };
-
-  const handleSetNewPassword = () => {
-    const p = newPassword.join("");
-    const c = confirmPassword.join("");
-    if (p.length !== 6 || c.length !== 6) {
-      setNewPasswordError("Enter and confirm a 6-digit password");
-      return;
-    }
-    if (p !== c) {
-      setNewPasswordError("Passwords don't match — try again");
-      setConfirmPassword(EMPTY_6);
-      return;
-    }
-    resetPassword(p);
-    setPassword(EMPTY_6);
-    setLoginError(false);
-    setStep("password");
-  };
-
-  if (!authChecked || isAuthenticated || !hasAccount) {
+  if (!authChecked || isAuthenticated) {
     return null;
   }
 
@@ -175,134 +127,60 @@ export default function LoginPage() {
         }}
       >
         <Box sx={{ width: "100%", maxWidth: 360 }}>
-          <Fade in={step === "password"} unmountOnExit>
-            <Box sx={{ display: step === "password" ? "block" : "none" }}>
-              <Typography variant="h6" sx={{ fontWeight: 600, mb: 0.5 }}>
-                Welcome back
+          <Typography variant="h6" sx={{ fontWeight: 600, mb: 0.5 }}>
+            Welcome back
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+            Enter your mobile number and 6-digit password
+          </Typography>
+
+          <Stack spacing={3}>
+            <TextField
+              label="Mobile number"
+              fullWidth
+              autoFocus
+              value={phone}
+              onChange={(e) => {
+                setPhone(e.target.value.replace(/\D/g, "").slice(0, 10));
+                setLoginError(false);
+              }}
+              slotProps={{
+                input: {
+                  startAdornment: <InputAdornment position="start">+91</InputAdornment>,
+                },
+                htmlInput: { inputMode: "numeric", pattern: "[0-9]*" },
+              }}
+            />
+            <OtpInput
+              value={password}
+              onChange={(v) => {
+                setPassword(v);
+                setLoginError(false);
+              }}
+              onComplete={(code) => handleLogin(code)}
+              length={6}
+            />
+            {loginError && (
+              <Typography variant="caption" color="error" align="center">
+                Incorrect phone number or password — try again
               </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                Enter your 6-digit password
-              </Typography>
+            )}
 
-              <Stack spacing={3}>
-                <OtpInput
-                  value={password}
-                  onChange={(v) => {
-                    setPassword(v);
-                    setLoginError(false);
-                  }}
-                  onComplete={(code) => handleLogin(code)}
-                  length={6}
-                />
-                {loginError && (
-                  <Typography variant="caption" color="error" align="center">
-                    Incorrect password — try again
-                  </Typography>
-                )}
+            <Button
+              variant="contained"
+              size="large"
+              fullWidth
+              disabled={!phoneValid || loggingIn}
+              onClick={() => handleLogin()}
+              sx={{ borderRadius: 6, py: 1.3, fontWeight: 600, boxShadow: "0 6px 16px rgba(0,101,143,0.35)" }}
+            >
+              Log In
+            </Button>
 
-                <Button
-                  variant="contained"
-                  size="large"
-                  fullWidth
-                  onClick={() => handleLogin()}
-                  sx={{ borderRadius: 6, py: 1.3, fontWeight: 600, boxShadow: "0 6px 16px rgba(0,101,143,0.35)" }}
-                >
-                  Log In
-                </Button>
-
-                <Typography variant="body2" align="center">
-                  <Link component="button" onClick={goToForgotPassword}>
-                    Forgot password?
-                  </Link>
-                </Typography>
-              </Stack>
-            </Box>
-          </Fade>
-
-          <Fade in={step === "otp"} unmountOnExit>
-            <Box sx={{ display: step === "otp" ? "block" : "none" }}>
-              <Typography variant="h6" sx={{ fontWeight: 600, mb: 0.5 }}>
-                Verify your number
-              </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                Code sent to +91 {phone}
-              </Typography>
-
-              <Stack spacing={3}>
-                <OtpInput value={otp} onChange={setOtp} onComplete={handleVerifyOtp} length={4} />
-                <Button
-                  variant="contained"
-                  size="large"
-                  fullWidth
-                  onClick={() => handleVerifyOtp(otp.join(""))}
-                  sx={{ borderRadius: 6, py: 1.3, fontWeight: 600, boxShadow: "0 6px 16px rgba(0,101,143,0.35)" }}
-                >
-                  Verify
-                </Button>
-                <Typography variant="body2" align="center" color="text.secondary">
-                  {resendIn > 0 ? (
-                    `Resend OTP in ${resendIn}s`
-                  ) : (
-                    <Link component="button" onClick={() => setResendIn(RESEND_SECONDS)}>
-                      Resend OTP
-                    </Link>
-                  )}
-                </Typography>
-                <Typography variant="body2" align="center">
-                  <Link component="button" onClick={() => setStep("password")}>
-                    Back to login
-                  </Link>
-                </Typography>
-              </Stack>
-            </Box>
-          </Fade>
-
-          <Fade in={step === "new-password"} unmountOnExit>
-            <Box sx={{ display: step === "new-password" ? "block" : "none" }}>
-              <Typography variant="h6" sx={{ fontWeight: 600, mb: 0.5 }}>
-                Set a new password
-              </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                Choose a new 6-digit password for your account.
-              </Typography>
-
-              <Stack spacing={3}>
-                <Stack spacing={1}>
-                  <Typography variant="caption" color="text.secondary" align="center">
-                    New password
-                  </Typography>
-                  <OtpInput value={newPassword} onChange={setNewPassword} length={6} />
-                </Stack>
-                <Stack spacing={1}>
-                  <Typography variant="caption" color="text.secondary" align="center">
-                    Confirm password
-                  </Typography>
-                  <OtpInput
-                    value={confirmPassword}
-                    onChange={setConfirmPassword}
-                    onComplete={() => handleSetNewPassword()}
-                    length={6}
-                  />
-                </Stack>
-
-                {newPasswordError && (
-                  <Typography variant="caption" color="error" align="center">
-                    {newPasswordError}
-                  </Typography>
-                )}
-
-                <Button
-                  variant="contained"
-                  size="large"
-                  fullWidth
-                  onClick={handleSetNewPassword}
-                  sx={{ borderRadius: 6, py: 1.3, fontWeight: 600, boxShadow: "0 6px 16px rgba(0,101,143,0.35)" }}
-                >
-                  Save &amp; Continue
-                </Button>
-              </Stack>
-            </Box>
-          </Fade>
+            <Typography variant="body2" align="center">
+              New here? <Link component="button" onClick={() => router.push("/signup")}>Sign up</Link>
+            </Typography>
+          </Stack>
         </Box>
       </Box>
     </Box>

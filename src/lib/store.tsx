@@ -6,17 +6,8 @@ import {
   initialMemberPayments,
   initialMembers,
   initialSessions,
-  vehicleTypes as initialVehicleTypes,
 } from "./mockData";
-import {
-  checkPassword,
-  createDeviceAccount,
-  getDeviceAccount,
-  resolveRole,
-  updateDeviceProfile,
-  updateDevicePassword,
-} from "./mockAuth";
-import { addTeamInvite as addTeamInviteToStorage, getTeamInvites, removeTeamInvite as removeTeamInviteFromStorage } from "./teamInvites";
+import { supabase } from "./supabaseClient";
 import { addMonths } from "./calc";
 import { getMembershipPrice } from "./membership";
 import {
@@ -34,15 +25,44 @@ import {
   VehicleType,
 } from "./types";
 
-const SESSION_STORAGE_KEY = "parkesy-session";
-const BUSINESS_NAME_STORAGE_KEY = "parkesy-business-name";
-const BUSINESS_ADDRESS_STORAGE_KEY = "parkesy-business-address";
-const BUSINESS_PHONE_STORAGE_KEY = "parkesy-business-phone";
-const VEHICLE_NUMBER_CAPTURE_MODE_KEY = "parkesy-vehicle-number-capture-mode";
-const COLLECT_AT_CHECKIN_KEY = "parkesy-collect-at-checkin";
-const LONG_STAY_THRESHOLD_KEY = "parkesy-long-stay-threshold-hours";
-const DEFAULT_BUSINESS_NAME = "Sarva Parking";
-const DEFAULT_LONG_STAY_THRESHOLD_HOURS = 24;
+const PHONE_EMAIL_DOMAIN = "parkesy.internal";
+function phoneToEmail(phone: string): string {
+  return `${phone.trim()}@${PHONE_EMAIL_DOMAIN}`;
+}
+
+function mapVehicleTypeRow(row: {
+  id: string;
+  name: VehicleType["name"];
+  total_slots: number;
+  slabs: RateSlab[];
+  membership_pricing: VehicleType["membershipPricing"];
+}): VehicleType {
+  return {
+    id: row.id,
+    name: row.name,
+    totalSlots: row.total_slots,
+    slabs: row.slabs ?? [],
+    membershipPricing: row.membership_pricing ?? [],
+  };
+}
+
+function mapInviteRow(row: {
+  id: string;
+  name: string;
+  phone: string;
+  pin: string;
+  role: Role;
+  created_at: string;
+}): TeamInvite {
+  return {
+    id: row.id,
+    name: row.name,
+    phone: row.phone,
+    pin: row.pin,
+    role: row.role,
+    createdAt: row.created_at,
+  };
+}
 
 export interface AddMemberInput {
   vehicleNumber: string;
@@ -59,18 +79,15 @@ export interface AddMemberInput {
 interface AppState {
   authChecked: boolean;
   isAuthenticated: boolean;
-  hasAccount: boolean;
   role: Role;
   userName: string;
   userAddress: Address;
   phone: string;
-  signup: (phone: string, password: string, name: string) => void;
-  login: (password: string) => boolean;
+  signup: (phone: string, password: string, name: string) => Promise<string | null>;
+  login: (phone: string, password: string) => Promise<boolean>;
   logout: () => void;
-  resetPassword: (newPassword: string) => void;
   updateUserProfile: (name: string, address: Address) => void;
   teamInvites: TeamInvite[];
-  findInviteByPhone: (phone: string) => TeamInvite | undefined;
   addTeamInvite: (name: string, phone: string, pin: string, role: Role) => void;
   removeTeamInvite: (id: string) => void;
   businessName: string;
@@ -127,21 +144,19 @@ let tokenCounter = 103;
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [authChecked, setAuthChecked] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [hasAccount, setHasAccount] = useState(false);
   const [role, setRole] = useState<Role>("employee");
   const [userName, setUserName] = useState("");
   const [userAddress, setUserAddress] = useState<Address>({});
   const [phone, setPhone] = useState("");
+  const [businessId, setBusinessId] = useState<string | null>(null);
 
-  // Starts at the default (not "") so server and first client paint match;
-  // the real saved values (if any) are only read from localStorage after mount.
-  const [businessName, setBusinessNameState] = useState(DEFAULT_BUSINESS_NAME);
+  const [businessName, setBusinessNameState] = useState("");
   const [businessAddress, setBusinessAddressState] = useState<Address>({});
   const [businessPhone, setBusinessPhoneState] = useState("");
   const [vehicleNumberCaptureMode, setVehicleNumberCaptureModeState] = useState<VehicleNumberCaptureMode>("full");
   const [collectAtCheckIn, setCollectAtCheckInState] = useState(true);
-  const [longStayThresholdHours, setLongStayThresholdHoursState] = useState(DEFAULT_LONG_STAY_THRESHOLD_HOURS);
-  const [vehicleTypes, setVehicleTypes] = useState<VehicleType[]>(initialVehicleTypes);
+  const [longStayThresholdHours, setLongStayThresholdHoursState] = useState(24);
+  const [vehicleTypes, setVehicleTypes] = useState<VehicleType[]>([]);
 
   const [sessions, setSessions] = useState<ParkingSession[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
@@ -149,47 +164,81 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [memberPayments, setMemberPayments] = useState<MemberPayment[]>([]);
   const [teamInvites, setTeamInvites] = useState<TeamInvite[]>([]);
 
+  // Mock/local-only for now — sessions, expenses, members, and payments are
+  // the next phase to move onto Supabase. Everything else on this page
+  // (auth, team invites, business settings, vehicle types) is already real.
   useEffect(() => {
     setSessions(initialSessions);
     setExpenses(initialExpenses);
     setMembers(initialMembers);
     setMemberPayments(initialMemberPayments);
-    setTeamInvites(getTeamInvites());
+  }, []);
 
-    const savedName = window.localStorage.getItem(BUSINESS_NAME_STORAGE_KEY);
-    if (savedName) setBusinessNameState(savedName);
-    const savedAddress = window.localStorage.getItem(BUSINESS_ADDRESS_STORAGE_KEY);
-    if (savedAddress) {
-      try {
-        setBusinessAddressState(JSON.parse(savedAddress));
-      } catch {
-        // ignore malformed legacy value
+  useEffect(() => {
+    let active = true;
+
+    async function loadForSession(userId: string | null) {
+      if (!userId) {
+        if (active) {
+          setIsAuthenticated(false);
+          setBusinessId(null);
+          setAuthChecked(true);
+        }
+        return;
       }
-    }
-    const savedPhone = window.localStorage.getItem(BUSINESS_PHONE_STORAGE_KEY);
-    if (savedPhone) setBusinessPhoneState(savedPhone);
-    const savedCaptureMode = window.localStorage.getItem(VEHICLE_NUMBER_CAPTURE_MODE_KEY);
-    if (savedCaptureMode === "full" || savedCaptureMode === "last4") setVehicleNumberCaptureModeState(savedCaptureMode);
-    const savedCollectAtCheckIn = window.localStorage.getItem(COLLECT_AT_CHECKIN_KEY);
-    if (savedCollectAtCheckIn !== null) setCollectAtCheckInState(savedCollectAtCheckIn === "1");
-    const savedThreshold = window.localStorage.getItem(LONG_STAY_THRESHOLD_KEY);
-    if (savedThreshold) {
-      const parsed = parseFloat(savedThreshold);
-      if (!Number.isNaN(parsed) && parsed > 0) setLongStayThresholdHoursState(parsed);
+
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("name, phone, address, role, business_id")
+        .eq("id", userId)
+        .maybeSingle();
+
+      if (!active) return;
+
+      if (!profile) {
+        // Signed in but the profile/business setup never completed.
+        setIsAuthenticated(false);
+        setAuthChecked(true);
+        return;
+      }
+
+      setRole(profile.role);
+      setUserName(profile.name);
+      setUserAddress((profile.address as Address) ?? {});
+      setPhone(profile.phone);
+      setBusinessId(profile.business_id);
+
+      const [{ data: business }, { data: vts }, { data: invites }] = await Promise.all([
+        supabase.from("businesses").select("*").eq("id", profile.business_id).maybeSingle(),
+        supabase.from("vehicle_types").select("*").eq("business_id", profile.business_id),
+        supabase.from("team_invites").select("*").eq("business_id", profile.business_id).is("redeemed_at", null),
+      ]);
+
+      if (!active) return;
+
+      if (business) {
+        setBusinessNameState(business.name);
+        setBusinessAddressState((business.address as Address) ?? {});
+        setBusinessPhoneState(business.phone ?? "");
+        setVehicleNumberCaptureModeState(business.vehicle_number_capture_mode);
+        setCollectAtCheckInState(business.collect_at_checkin);
+        setLongStayThresholdHoursState(business.long_stay_threshold_hours);
+      }
+      if (vts) setVehicleTypes(vts.map(mapVehicleTypeRow));
+      if (invites) setTeamInvites(invites.map(mapInviteRow));
+
+      setIsAuthenticated(true);
+      setAuthChecked(true);
     }
 
-    const account = getDeviceAccount();
-    if (account) {
-      setHasAccount(true);
-      setPhone(account.phone);
-      setRole(account.role);
-      setUserName(account.name);
-      setUserAddress(account.address ?? {});
-      if (window.localStorage.getItem(SESSION_STORAGE_KEY) === "1") {
-        setIsAuthenticated(true);
-      }
-    }
-    setAuthChecked(true);
+    const { data: subscription } = supabase.auth.onAuthStateChange((_event, session) => {
+      void loadForSession(session?.user.id ?? null);
+    });
+
+    return () => {
+      active = false;
+      subscription.subscription.unsubscribe();
+    };
   }, []);
 
   const findActiveMember = (vehicleNumber: string): Member | undefined => {
@@ -198,99 +247,114 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     return members.find((m) => m.vehicleNumber === normalized && new Date(m.expiryDate).getTime() >= Date.now());
   };
 
-  const findInviteByPhone = (phoneToFind: string): TeamInvite | undefined => {
-    return teamInvites.find((inv) => inv.phone === phoneToFind.trim());
-  };
-
   const value = useMemo<AppState>(
     () => ({
       authChecked,
       isAuthenticated,
-      hasAccount,
       role,
       userName,
       userAddress,
       phone,
-      signup: (newPhone, password, name) => {
-        const invite = findInviteByPhone(newPhone);
-        const role_ = invite ? invite.role : resolveRole(newPhone);
-        const account = createDeviceAccount(newPhone, password, name, role_);
-        if (invite) {
-          removeTeamInviteFromStorage(invite.id);
-          setTeamInvites((prev) => prev.filter((inv) => inv.id !== invite.id));
+      signup: async (newPhone, password, name) => {
+        const email = phoneToEmail(newPhone);
+        const { data, error } = await supabase.auth.signUp({ email, password });
+        if (error) {
+          return error.message.toLowerCase().includes("already registered")
+            ? "This phone number is already registered."
+            : error.message;
         }
-        setHasAccount(true);
-        setPhone(account.phone);
-        setRole(account.role);
-        setUserName(account.name);
-        // Deliberately does not authenticate — user is sent back to Login.
+        if (!data.session) {
+          return "Could not create account — please try again.";
+        }
+        const { error: rpcError } = await supabase.rpc("complete_signup", {
+          p_name: name.trim(),
+          p_phone: newPhone.trim(),
+        });
+        if (rpcError) {
+          return rpcError.message;
+        }
+        // Deliberately does not stay authenticated — user is sent back to Login.
+        await supabase.auth.signOut();
+        return null;
       },
-      login: (password) => {
-        if (!checkPassword(password)) return false;
-        window.localStorage.setItem(SESSION_STORAGE_KEY, "1");
-        setIsAuthenticated(true);
-        return true;
+      login: async (loginPhone, password) => {
+        const email = phoneToEmail(loginPhone);
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        return !error;
       },
       logout: () => {
-        window.localStorage.removeItem(SESSION_STORAGE_KEY);
-        setIsAuthenticated(false);
+        void supabase.auth.signOut();
       },
       updateUserProfile: (name, address) => {
-        const updated = updateDeviceProfile(name, address);
-        if (!updated) return;
-        setUserName(updated.name);
+        const trimmedName = name.trim() || userName;
+        setUserName(trimmedName);
         setUserAddress(address);
+        void supabase.auth.getUser().then(({ data }) => {
+          const userId = data.user?.id;
+          if (!userId) return;
+          void supabase.from("profiles").update({ name: trimmedName, address }).eq("id", userId);
+        });
       },
       teamInvites,
-      findInviteByPhone,
       addTeamInvite: (name, phoneNum, pin, inviteRole) => {
-        const invite = addTeamInviteToStorage(name, phoneNum, pin, inviteRole);
-        setTeamInvites((prev) => [invite, ...prev]);
+        if (!businessId) return;
+        void supabase
+          .from("team_invites")
+          .insert({ business_id: businessId, name: name.trim(), phone: phoneNum.trim(), pin, role: inviteRole })
+          .select()
+          .single()
+          .then(({ data }) => {
+            if (data) setTeamInvites((prev) => [mapInviteRow(data), ...prev]);
+          });
       },
       removeTeamInvite: (id) => {
-        removeTeamInviteFromStorage(id);
         setTeamInvites((prev) => prev.filter((inv) => inv.id !== id));
-      },
-      resetPassword: (newPassword) => {
-        updateDevicePassword(newPassword);
+        void supabase.from("team_invites").delete().eq("id", id);
       },
       businessName,
       businessAddress,
       businessPhone,
       setBusinessDetails: (name, address, phone_) => {
-        const trimmedName = name.trim() || DEFAULT_BUSINESS_NAME;
-        window.localStorage.setItem(BUSINESS_NAME_STORAGE_KEY, trimmedName);
-        window.localStorage.setItem(BUSINESS_ADDRESS_STORAGE_KEY, JSON.stringify(address));
-        window.localStorage.setItem(BUSINESS_PHONE_STORAGE_KEY, phone_.trim());
+        if (!businessId) return;
+        const trimmedName = name.trim() || businessName;
         setBusinessNameState(trimmedName);
         setBusinessAddressState(address);
         setBusinessPhoneState(phone_.trim());
+        void supabase
+          .from("businesses")
+          .update({ name: trimmedName, address, phone: phone_.trim() })
+          .eq("id", businessId);
       },
       vehicleNumberCaptureMode,
       setVehicleNumberCaptureMode: (mode) => {
-        window.localStorage.setItem(VEHICLE_NUMBER_CAPTURE_MODE_KEY, mode);
+        if (!businessId) return;
         setVehicleNumberCaptureModeState(mode);
+        void supabase.from("businesses").update({ vehicle_number_capture_mode: mode }).eq("id", businessId);
       },
       collectAtCheckIn,
       setCollectAtCheckIn: (value) => {
-        window.localStorage.setItem(COLLECT_AT_CHECKIN_KEY, value ? "1" : "0");
+        if (!businessId) return;
         setCollectAtCheckInState(value);
+        void supabase.from("businesses").update({ collect_at_checkin: value }).eq("id", businessId);
       },
       longStayThresholdHours,
       setLongStayThresholdHours: (hours) => {
-        window.localStorage.setItem(LONG_STAY_THRESHOLD_KEY, String(hours));
+        if (!businessId) return;
         setLongStayThresholdHoursState(hours);
+        void supabase.from("businesses").update({ long_stay_threshold_hours: hours }).eq("id", businessId);
       },
       vehicleTypes,
       updateVehicleTypeSlotsAndSlabs: (vehicleTypeId, totalSlots, slabs) => {
         setVehicleTypes((prev) =>
           prev.map((vt) => (vt.id === vehicleTypeId ? { ...vt, totalSlots, slabs } : vt))
         );
+        void supabase.from("vehicle_types").update({ total_slots: totalSlots, slabs }).eq("id", vehicleTypeId);
       },
       updateVehicleTypeMembershipPricing: (vehicleTypeId, pricing) => {
         setVehicleTypes((prev) =>
           prev.map((vt) => (vt.id === vehicleTypeId ? { ...vt, membershipPricing: pricing } : vt))
         );
+        void supabase.from("vehicle_types").update({ membership_pricing: pricing }).eq("id", vehicleTypeId);
       },
       sessions,
       expenses,
@@ -416,11 +480,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     [
       authChecked,
       isAuthenticated,
-      hasAccount,
       role,
       userName,
       userAddress,
       phone,
+      businessId,
       businessName,
       businessAddress,
       businessPhone,

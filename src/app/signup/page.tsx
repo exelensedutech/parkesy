@@ -14,7 +14,7 @@ import Snackbar from "@mui/material/Snackbar";
 import Alert from "@mui/material/Alert";
 import LocalParkingIcon from "@mui/icons-material/LocalParking";
 import { useAppStore } from "@/lib/store";
-import { TeamInvite } from "@/lib/types";
+import { supabase } from "@/lib/supabaseClient";
 import OtpInput from "@/components/OtpInput";
 
 const RESEND_SECONDS = 30;
@@ -25,14 +25,15 @@ type Step = "phone" | "otp" | "password";
 
 export default function SignupPage() {
   const router = useRouter();
-  const { authChecked, isAuthenticated, signup, findInviteByPhone } = useAppStore();
+  const { authChecked, isAuthenticated, signup } = useAppStore();
   const [step, setStep] = useState<Step>("phone");
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [otp, setOtp] = useState<string[]>(EMPTY_4);
   const [otpError, setOtpError] = useState("");
   const [resendIn, setResendIn] = useState(RESEND_SECONDS);
-  const [inviteMatch, setInviteMatch] = useState<TeamInvite | undefined>(undefined);
+  const [hasInvite, setHasInvite] = useState(false);
+  const [checkingPhone, setCheckingPhone] = useState(false);
 
   const [password, setPassword] = useState<string[]>(EMPTY_6);
   const [confirmPassword, setConfirmPassword] = useState<string[]>(EMPTY_6);
@@ -54,25 +55,29 @@ export default function SignupPage() {
   const phoneValid = /^\d{10}$/.test(phone);
   const nameValid = name.trim().length > 0;
 
-  const handleSendOtp = () => {
-    if (!phoneValid || !nameValid) return;
-    setInviteMatch(findInviteByPhone(phone));
+  const handleSendOtp = async () => {
+    if (!phoneValid || !nameValid || checkingPhone) return;
+    setCheckingPhone(true);
+    const { data } = await supabase.rpc("has_pending_invite", { p_phone: phone });
+    setCheckingPhone(false);
+    setHasInvite(Boolean(data));
     setOtp(EMPTY_4);
     setOtpError("");
     setResendIn(RESEND_SECONDS);
     setStep("otp");
   };
 
-  const handleVerifyOtp = (code: string) => {
+  const handleVerifyOtp = async (code: string) => {
     if (code.length !== 4) return;
-    if (inviteMatch) {
-      if (code !== inviteMatch.pin) {
+    if (hasInvite) {
+      const { data: matchedRole } = await supabase.rpc("verify_invite_pin", { p_phone: phone, p_pin: code });
+      if (!matchedRole) {
         setOtpError("Incorrect PIN — check with your admin");
         setOtp(EMPTY_4);
         return;
       }
     }
-    // No backend yet — without an invite, any 4-digit code is accepted as the verified OTP.
+    // Without an invite, any 4-digit code is accepted for now (no SMS OTP yet).
     setOtpError("");
     setPassword(EMPTY_6);
     setConfirmPassword(EMPTY_6);
@@ -80,7 +85,7 @@ export default function SignupPage() {
     setStep("password");
   };
 
-  const handleCreateAccount = () => {
+  const handleCreateAccount = async () => {
     const p = password.join("");
     const c = confirmPassword.join("");
     if (p.length !== 6 || c.length !== 6) {
@@ -92,7 +97,11 @@ export default function SignupPage() {
       setConfirmPassword(EMPTY_6);
       return;
     }
-    signup(phone, p, name.trim());
+    const error = await signup(phone, p, name.trim());
+    if (error) {
+      setPasswordError(error);
+      return;
+    }
     setShowToast(true);
     setTimeout(() => router.replace("/login"), 1400);
   };
@@ -211,7 +220,7 @@ export default function SignupPage() {
                   variant="contained"
                   size="large"
                   fullWidth
-                  disabled={!phoneValid || !nameValid}
+                  disabled={!phoneValid || !nameValid || checkingPhone}
                   onClick={handleSendOtp}
                   sx={{ borderRadius: 6, py: 1.3, fontWeight: 600, boxShadow: "0 6px 16px rgba(0,101,143,0.35)" }}
                 >
@@ -227,11 +236,11 @@ export default function SignupPage() {
           <Fade in={step === "otp"} unmountOnExit>
             <Box sx={{ display: step === "otp" ? "block" : "none" }}>
               <Typography variant="h6" sx={{ fontWeight: 600, mb: 0.5 }}>
-                {inviteMatch ? "Enter your invite PIN" : "Verify your number"}
+                {hasInvite ? "Enter your invite PIN" : "Verify your number"}
               </Typography>
               <Stack direction="row" spacing={0.5} sx={{ alignItems: "baseline", mb: 3 }}>
                 <Typography variant="body2" color="text.secondary">
-                  {inviteMatch ? "Your admin shared a 4-digit PIN with you" : `Code sent to +91 ${phone}`}
+                  {hasInvite ? "Your admin shared a 4-digit PIN with you" : `Code sent to +91 ${phone}`}
                 </Typography>
                 <Link component="button" variant="body2" onClick={() => setStep("phone")}>
                   Change
@@ -254,7 +263,7 @@ export default function SignupPage() {
                 >
                   Verify
                 </Button>
-                {!inviteMatch && (
+                {!hasInvite && (
                   <Typography variant="body2" align="center" color="text.secondary">
                     {resendIn > 0 ? (
                       `Resend OTP in ${resendIn}s`
