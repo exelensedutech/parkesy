@@ -30,16 +30,6 @@ export default function LoginPage() {
     }
   }, [authChecked, isAuthenticated, router]);
 
-  // If we were mid-login and the store finishes checking but still isn't
-  // authenticated, the sign-in itself worked but loading the profile failed —
-  // surface that instead of leaving the button disabled forever.
-  useEffect(() => {
-    if (loggingIn && authChecked && !isAuthenticated) {
-      setLoggingIn(false);
-      setLoginError(true);
-    }
-  }, [authChecked, isAuthenticated, loggingIn]);
-
   const phoneValid = /^\d{10}$/.test(phone);
 
   const handleLogin = async (code?: string) => {

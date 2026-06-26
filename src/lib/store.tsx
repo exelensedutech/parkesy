@@ -289,8 +289,21 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       },
       login: async (loginPhone, password) => {
         const email = phoneToEmail(loginPhone);
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        return !error;
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error || !data.session) return false;
+        // Confirm a profile actually exists before declaring success — don't
+        // rely on the separate onAuthStateChange-driven load (elsewhere in
+        // this file) to indirectly signal failure; that's a race, not a fact.
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("id")
+          .eq("id", data.user.id)
+          .maybeSingle();
+        if (!profile) {
+          await supabase.auth.signOut();
+          return false;
+        }
+        return true;
       },
       logout: () => {
         void supabase.auth.signOut();
