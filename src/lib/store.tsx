@@ -1,15 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
-import {
-  initialExpenses,
-  initialMemberPayments,
-  initialMembers,
-  initialSessions,
-} from "./mockData";
 import { supabase } from "./supabaseClient";
-import { addMonths } from "./calc";
-import { getMembershipPrice } from "./membership";
 import {
   Address,
   Expense,
@@ -28,6 +20,12 @@ import {
 const PHONE_EMAIL_DOMAIN = "parkesy.internal";
 function phoneToEmail(phone: string): string {
   return `${phone.trim()}@${PHONE_EMAIL_DOMAIN}`;
+}
+
+type ProfilesById = Map<string, string>;
+function nameFor(profilesById: ProfilesById, id: string | null | undefined): string | undefined {
+  if (!id) return undefined;
+  return profilesById.get(id) ?? "Unknown";
 }
 
 function mapVehicleTypeRow(row: {
@@ -61,6 +59,119 @@ function mapInviteRow(row: {
     pin: row.pin,
     role: row.role,
     createdAt: row.created_at,
+  };
+}
+
+function mapSessionRow(
+  row: {
+    id: string;
+    ticket_code: string;
+    vehicle_type_id: string;
+    vehicle_number: string;
+    vehicle_photo_url: string | null;
+    entry_time: string;
+    exit_time: string | null;
+    amount_paid_at_entry: number;
+    payment_mode_at_entry: PaymentMode | null;
+    amount_paid_at_exit: number | null;
+    payment_mode_at_exit: PaymentMode | null;
+    total_amount: number | null;
+    recorded_by: string;
+    exit_recorded_by: string | null;
+    status: ParkingSession["status"];
+    member_id: string | null;
+  },
+  profilesById: ProfilesById
+): ParkingSession {
+  return {
+    id: row.id,
+    tokenCode: row.ticket_code,
+    vehicleTypeId: row.vehicle_type_id,
+    vehicleNumber: row.vehicle_number,
+    vehiclePhotoUrl: row.vehicle_photo_url ?? undefined,
+    entryTime: row.entry_time,
+    exitTime: row.exit_time ?? undefined,
+    amountPaidAtEntry: row.amount_paid_at_entry,
+    paymentModeAtEntry: row.payment_mode_at_entry ?? undefined,
+    amountPaidAtExit: row.amount_paid_at_exit ?? undefined,
+    paymentModeAtExit: row.payment_mode_at_exit ?? undefined,
+    totalAmount: row.total_amount ?? undefined,
+    recordedBy: nameFor(profilesById, row.recorded_by) ?? "Unknown",
+    exitRecordedBy: nameFor(profilesById, row.exit_recorded_by),
+    status: row.status,
+    memberId: row.member_id ?? undefined,
+  };
+}
+
+function mapExpenseRow(
+  row: { id: string; amount: number; title: string; note: string | null; expense_date: string; recorded_by: string },
+  profilesById: ProfilesById
+): Expense {
+  return {
+    id: row.id,
+    amount: row.amount,
+    title: row.title,
+    note: row.note ?? undefined,
+    expenseDate: row.expense_date,
+    recordedBy: nameFor(profilesById, row.recorded_by) ?? "Unknown",
+  };
+}
+
+function mapMemberRow(
+  row: {
+    id: string;
+    vehicle_number: string;
+    vehicle_type_id: string;
+    customer_name: string | null;
+    customer_phone: string | null;
+    customer_address: Address | null;
+    id_proof: IdProof | null;
+    vehicle_photo_url: string | null;
+    duration_months: number;
+    fee_amount: number;
+    start_date: string;
+    expiry_date: string;
+    recorded_by: string;
+  },
+  profilesById: ProfilesById
+): Member {
+  return {
+    id: row.id,
+    vehicleNumber: row.vehicle_number,
+    vehicleTypeId: row.vehicle_type_id,
+    customerName: row.customer_name ?? undefined,
+    customerPhone: row.customer_phone ?? undefined,
+    customerAddress: row.customer_address ?? undefined,
+    idProof: row.id_proof ?? undefined,
+    vehiclePhotoUrl: row.vehicle_photo_url ?? undefined,
+    durationMonths: row.duration_months,
+    feeAmount: row.fee_amount,
+    startDate: row.start_date,
+    expiryDate: row.expiry_date,
+    recordedBy: nameFor(profilesById, row.recorded_by) ?? "Unknown",
+  };
+}
+
+function mapMemberPaymentRow(
+  row: {
+    id: string;
+    member_id: string;
+    amount: number;
+    payment_mode: PaymentMode;
+    paid_at: string;
+    type: MemberPayment["type"];
+    recorded_by: string;
+  },
+  profilesById: ProfilesById
+): MemberPayment {
+  return {
+    id: row.id,
+    memberId: row.member_id,
+    amount: row.amount,
+    paymentMode: row.payment_mode,
+    paidAt: row.paid_at,
+    type: row.type,
+    recordedBy: nameFor(profilesById, row.recorded_by) ?? "Unknown",
   };
 }
 
@@ -111,35 +222,28 @@ interface AppState {
   members: Member[];
   memberPayments: MemberPayment[];
   findActiveMember: (vehicleNumber: string) => Member | undefined;
-  addMember: (input: AddMemberInput) => void;
-  renewMember: (memberId: string, durationMonths: number, paymentMode: PaymentMode) => void;
+  addMember: (input: AddMemberInput) => Promise<void>;
+  renewMember: (memberId: string, durationMonths: number, paymentMode: PaymentMode) => Promise<void>;
   startSession: (
     vehicleTypeId: string,
     vehicleNumber: string,
     amountPaidAtEntry: number,
     paymentModeAtEntry?: PaymentMode,
     vehiclePhotoUrl?: string
-  ) => string;
-  completeSession: (
-    id: string,
-    totalAmount: number,
-    amountPaidAtExit: number,
-    paymentModeAtExit?: PaymentMode
-  ) => void;
+  ) => Promise<string>;
+  completeSession: (id: string, paymentMode?: PaymentMode) => Promise<ParkingSession | null>;
   updateSessionVehicleNumber: (sessionId: string, vehicleNumber: string) => void;
-  addExpense: (amount: number, title: string, note: string | undefined, expenseDate: string) => void;
+  addExpense: (amount: number, title: string, note: string | undefined, expenseDate: string) => Promise<void>;
   updateExpense: (
     id: string,
     amount: number,
     title: string,
     note: string | undefined,
     expenseDate: string
-  ) => void;
+  ) => Promise<void>;
 }
 
 const AppContext = createContext<AppState | null>(null);
-
-let tokenCounter = 103;
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [authChecked, setAuthChecked] = useState(false);
@@ -149,6 +253,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [userAddress, setUserAddress] = useState<Address>({});
   const [phone, setPhone] = useState("");
   const [businessId, setBusinessId] = useState<string | null>(null);
+  const [profilesById, setProfilesById] = useState<ProfilesById>(new Map());
 
   const [businessName, setBusinessNameState] = useState("");
   const [businessAddress, setBusinessAddressState] = useState<Address>({});
@@ -163,16 +268,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [members, setMembers] = useState<Member[]>([]);
   const [memberPayments, setMemberPayments] = useState<MemberPayment[]>([]);
   const [teamInvites, setTeamInvites] = useState<TeamInvite[]>([]);
-
-  // Mock/local-only for now — sessions, expenses, members, and payments are
-  // the next phase to move onto Supabase. Everything else on this page
-  // (auth, team invites, business settings, vehicle types) is already real.
-  useEffect(() => {
-    setSessions(initialSessions);
-    setExpenses(initialExpenses);
-    setMembers(initialMembers);
-    setMemberPayments(initialMemberPayments);
-  }, []);
 
   useEffect(() => {
     let active = true;
@@ -218,13 +313,42 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       setPhone(profile.phone);
       setBusinessId(profile.business_id);
 
-      const [{ data: business }, { data: vts }, { data: invites }] = await Promise.all([
+      const [
+        { data: business },
+        { data: vts },
+        { data: invites },
+        { data: allProfiles },
+        { data: sessionRows },
+        { data: expenseRows },
+        { data: memberRows },
+        { data: paymentRows },
+      ] = await Promise.all([
         supabase.from("businesses").select("*").eq("id", profile.business_id).maybeSingle(),
         supabase.from("vehicle_types").select("*").eq("business_id", profile.business_id),
         supabase.from("team_invites").select("*").eq("business_id", profile.business_id).is("redeemed_at", null),
+        supabase.from("profiles").select("id, name").eq("business_id", profile.business_id),
+        supabase
+          .from("parking_sessions")
+          .select("*")
+          .eq("business_id", profile.business_id)
+          .order("entry_time", { ascending: false }),
+        supabase
+          .from("expenses")
+          .select("*")
+          .eq("business_id", profile.business_id)
+          .order("expense_date", { ascending: false }),
+        supabase.from("members").select("*").eq("business_id", profile.business_id),
+        supabase
+          .from("member_payments")
+          .select("*")
+          .eq("business_id", profile.business_id)
+          .order("paid_at", { ascending: false }),
       ]);
 
       if (!active) return;
+
+      const freshProfilesById: ProfilesById = new Map((allProfiles ?? []).map((p) => [p.id, p.name]));
+      setProfilesById(freshProfilesById);
 
       if (business) {
         setBusinessNameState(business.name);
@@ -236,6 +360,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       }
       if (vts) setVehicleTypes(vts.map(mapVehicleTypeRow));
       if (invites) setTeamInvites(invites.map(mapInviteRow));
+      if (sessionRows) setSessions(sessionRows.map((r) => mapSessionRow(r, freshProfilesById)));
+      if (expenseRows) setExpenses(expenseRows.map((r) => mapExpenseRow(r, freshProfilesById)));
+      if (memberRows) setMembers(memberRows.map((r) => mapMemberRow(r, freshProfilesById)));
+      if (paymentRows) setMemberPayments(paymentRows.map((r) => mapMemberPaymentRow(r, freshProfilesById)));
 
       setIsAuthenticated(true);
       setAuthChecked(true);
@@ -384,120 +512,116 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       members,
       memberPayments,
       findActiveMember,
-      addMember: (input) => {
-        const vehicleType = vehicleTypes.find((vt) => vt.id === input.vehicleTypeId);
-        const feeAmount = vehicleType ? getMembershipPrice(vehicleType, input.durationMonths) : 0;
-        const startDate = new Date().toISOString();
-        const newMember: Member = {
-          id: `m${Date.now()}`,
-          vehicleNumber: input.vehicleNumber.trim().toUpperCase(),
-          vehicleTypeId: input.vehicleTypeId,
-          customerName: input.customerName,
-          customerPhone: input.customerPhone,
-          customerAddress: input.customerAddress,
-          idProof: input.idProof,
-          vehiclePhotoUrl: input.vehiclePhotoUrl,
-          durationMonths: input.durationMonths,
-          feeAmount,
-          startDate,
-          expiryDate: addMonths(startDate, input.durationMonths),
-          recordedBy: userName,
-        };
-        setMembers((prev) => [newMember, ...prev]);
-        setMemberPayments((prev) => [
-          {
-            id: `mp${Date.now()}`,
-            memberId: newMember.id,
-            amount: feeAmount,
-            paymentMode: input.paymentMode,
-            paidAt: startDate,
-            type: "signup",
-            recordedBy: userName,
-          },
-          ...prev,
-        ]);
+      addMember: async (input) => {
+        const { data, error } = await supabase.rpc("add_member", {
+          p_vehicle_number: input.vehicleNumber,
+          p_vehicle_type_id: input.vehicleTypeId,
+          p_customer_name: input.customerName ?? null,
+          p_customer_phone: input.customerPhone ?? null,
+          p_customer_address: input.customerAddress ?? null,
+          p_id_proof: input.idProof ?? null,
+          p_vehicle_photo_url: input.vehiclePhotoUrl ?? null,
+          p_duration_months: input.durationMonths,
+          p_payment_mode: input.paymentMode,
+        });
+        if (error || !data) {
+          console.error("Failed to add member:", error);
+          return;
+        }
+        setMembers((prev) => [mapMemberRow(data, profilesById), ...prev]);
+        const { data: payment } = await supabase
+          .from("member_payments")
+          .select("*")
+          .eq("member_id", data.id)
+          .order("paid_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (payment) {
+          setMemberPayments((prev) => [mapMemberPaymentRow(payment, profilesById), ...prev]);
+        }
       },
-      renewMember: (memberId, durationMonths, paymentMode) => {
-        const member = members.find((m) => m.id === memberId);
-        if (!member) return;
-        const vehicleType = vehicleTypes.find((vt) => vt.id === member.vehicleTypeId);
-        const feeAmount = vehicleType ? getMembershipPrice(vehicleType, durationMonths) : 0;
-        const now = Date.now();
-        const base = new Date(Math.max(new Date(member.expiryDate).getTime(), now)).toISOString();
-        const newExpiry = addMonths(base, durationMonths);
-        setMembers((prev) =>
-          prev.map((m) => (m.id === memberId ? { ...m, expiryDate: newExpiry, durationMonths, feeAmount } : m))
-        );
-        setMemberPayments((prev) => [
-          {
-            id: `mp${Date.now()}`,
-            memberId,
-            amount: feeAmount,
-            paymentMode,
-            paidAt: new Date().toISOString(),
-            type: "renewal",
-            recordedBy: userName,
-          },
-          ...prev,
-        ]);
+      renewMember: async (memberId, durationMonths, paymentMode) => {
+        const { data, error } = await supabase.rpc("renew_member", {
+          p_member_id: memberId,
+          p_duration_months: durationMonths,
+          p_payment_mode: paymentMode,
+        });
+        if (error || !data) {
+          console.error("Failed to renew member:", error);
+          return;
+        }
+        const updated = mapMemberRow(data, profilesById);
+        setMembers((prev) => prev.map((m) => (m.id === memberId ? updated : m)));
+        const { data: payment } = await supabase
+          .from("member_payments")
+          .select("*")
+          .eq("member_id", memberId)
+          .order("paid_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (payment) {
+          setMemberPayments((prev) => [mapMemberPaymentRow(payment, profilesById), ...prev]);
+        }
       },
-      startSession: (vehicleTypeId, vehicleNumber, amountPaidAtEntry, paymentModeAtEntry, vehiclePhotoUrl) => {
-        const activeMember = findActiveMember(vehicleNumber);
-        const finalAmount = activeMember ? 0 : amountPaidAtEntry;
-        const tokenCode = `T-${tokenCounter++}`;
-        const newSession: ParkingSession = {
-          id: `s${Date.now()}`,
-          tokenCode,
-          vehicleTypeId,
-          vehicleNumber: vehicleNumber.trim().toUpperCase(),
-          vehiclePhotoUrl,
-          entryTime: new Date().toISOString(),
-          amountPaidAtEntry: finalAmount,
-          paymentModeAtEntry: finalAmount > 0 ? paymentModeAtEntry : undefined,
-          recordedBy: userName,
-          status: "parked",
-          memberId: activeMember?.id,
-        };
+      startSession: async (vehicleTypeId, vehicleNumber, amountPaidAtEntry, paymentModeAtEntry, vehiclePhotoUrl) => {
+        const { data, error } = await supabase.rpc("start_parking_session", {
+          p_vehicle_type_id: vehicleTypeId,
+          p_vehicle_number: vehicleNumber,
+          p_amount_paid_at_entry: amountPaidAtEntry,
+          p_payment_mode_at_entry: paymentModeAtEntry ?? null,
+          p_vehicle_photo_url: vehiclePhotoUrl ?? null,
+        });
+        if (error || !data) {
+          console.error("Failed to start parking session:", error);
+          throw error ?? new Error("Failed to start session");
+        }
+        const newSession = mapSessionRow(data, profilesById);
         setSessions((prev) => [newSession, ...prev]);
-        return tokenCode;
+        return newSession.tokenCode;
       },
-      completeSession: (id, totalAmount, amountPaidAtExit, paymentModeAtExit) => {
-        setSessions((prev) =>
-          prev.map((s) =>
-            s.id === id
-              ? {
-                  ...s,
-                  status: "completed",
-                  exitTime: new Date().toISOString(),
-                  totalAmount,
-                  amountPaidAtExit,
-                  paymentModeAtExit: amountPaidAtExit !== 0 ? paymentModeAtExit : undefined,
-                  exitRecordedBy: userName,
-                }
-              : s
-          )
-        );
+      completeSession: async (id, paymentMode) => {
+        const { data, error } = await supabase.rpc("complete_parking_session", {
+          p_session_id: id,
+          p_payment_mode: paymentMode ?? null,
+        });
+        if (error || !data) {
+          console.error("Failed to complete parking session:", error);
+          return null;
+        }
+        const updated = mapSessionRow(data, profilesById);
+        setSessions((prev) => prev.map((s) => (s.id === id ? updated : s)));
+        return updated;
       },
       updateSessionVehicleNumber: (sessionId, vehicleNumber) => {
-        setSessions((prev) =>
-          prev.map((s) => (s.id === sessionId ? { ...s, vehicleNumber: vehicleNumber.trim().toUpperCase() } : s))
-        );
+        const trimmed = vehicleNumber.trim().toUpperCase();
+        setSessions((prev) => prev.map((s) => (s.id === sessionId ? { ...s, vehicleNumber: trimmed } : s)));
+        void supabase.from("parking_sessions").update({ vehicle_number: trimmed }).eq("id", sessionId);
       },
-      addExpense: (amount, title, note, expenseDate) => {
-        const newExpense: Expense = {
-          id: `e${Date.now()}`,
-          amount,
-          title,
-          note,
-          expenseDate,
-          recordedBy: userName,
-        };
-        setExpenses((prev) => [newExpense, ...prev]);
+      addExpense: async (amount, title, note, expenseDate) => {
+        if (!businessId) return;
+        const { data, error } = await supabase
+          .from("expenses")
+          .insert({ business_id: businessId, amount, title, note: note ?? null, expense_date: expenseDate })
+          .select()
+          .single();
+        if (error || !data) {
+          console.error("Failed to add expense:", error);
+          return;
+        }
+        setExpenses((prev) => [mapExpenseRow(data, profilesById), ...prev]);
       },
-      updateExpense: (id, amount, title, note, expenseDate) => {
-        setExpenses((prev) =>
-          prev.map((e) => (e.id === id ? { ...e, amount, title, note, expenseDate } : e))
-        );
+      updateExpense: async (id, amount, title, note, expenseDate) => {
+        const { data, error } = await supabase
+          .from("expenses")
+          .update({ amount, title, note: note ?? null, expense_date: expenseDate })
+          .eq("id", id)
+          .select()
+          .single();
+        if (error || !data) {
+          console.error("Failed to update expense:", error);
+          return;
+        }
+        setExpenses((prev) => prev.map((e) => (e.id === id ? mapExpenseRow(data, profilesById) : e)));
       },
     }),
     [
@@ -508,6 +632,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       userAddress,
       phone,
       businessId,
+      profilesById,
       businessName,
       businessAddress,
       businessPhone,

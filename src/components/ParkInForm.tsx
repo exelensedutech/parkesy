@@ -67,31 +67,41 @@ export default function ParkInForm() {
 
   const paidValue = parseFloat(amountPaid) || 0;
 
-  const handlePark = () => {
+  const [parking, setParking] = useState(false);
+
+  const handlePark = async () => {
     if (!isCycle && !vehicleNumber.trim()) {
       setNumberError("Vehicle number is required");
       return;
     }
+    if (parking) return;
 
     const finalVehicleNumber = isCycle ? "" : vehicleNumber.trim().toUpperCase();
-    const tokenCode = startSession(
-      vehicleTypeId,
-      finalVehicleNumber,
-      paidValue,
-      paidValue > 0 ? paymentMode : undefined,
-      photoUrl
-    );
-    setConfirmation({
-      tokenCode,
-      vehicleTypeName: selectedVehicleType.name,
-      vehicleNumber: finalVehicleNumber,
-      amountPaid: paidValue,
-      isMember: Boolean(activeMember),
-    });
-    setVehicleNumber("");
-    setAmountPaid("");
-    setNumberError("");
-    setPhotoUrl(undefined);
+    setParking(true);
+    try {
+      const tokenCode = await startSession(
+        vehicleTypeId,
+        finalVehicleNumber,
+        paidValue,
+        paidValue > 0 ? paymentMode : undefined,
+        photoUrl
+      );
+      setConfirmation({
+        tokenCode,
+        vehicleTypeName: selectedVehicleType.name,
+        vehicleNumber: finalVehicleNumber,
+        amountPaid: paidValue,
+        isMember: Boolean(activeMember),
+      });
+      setVehicleNumber("");
+      setAmountPaid("");
+      setNumberError("");
+      setPhotoUrl(undefined);
+    } catch {
+      setNumberError("Could not park the vehicle — please try again");
+    } finally {
+      setParking(false);
+    }
   };
 
   return (
@@ -280,10 +290,11 @@ export default function ParkInForm() {
         variant="contained"
         size="large"
         fullWidth
+        disabled={parking}
         onClick={handlePark}
         sx={{ borderRadius: 6, py: 1.3, fontWeight: 600, boxShadow: "0 6px 16px rgba(0,101,143,0.35)" }}
       >
-        Park &amp; Issue Ticket
+        {parking ? "Issuing Ticket…" : "Park & Issue Ticket"}
       </Button>
 
       <ParkConfirmationDialog confirmation={confirmation} onClose={() => setConfirmation(null)} />

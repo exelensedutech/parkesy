@@ -43,6 +43,7 @@ export default function ParkOutSheet({
   const { vehicleTypes, completeSession, updateSessionVehicleNumber } = useAppStore();
   const [paymentMode, setPaymentMode] = useState<PaymentMode>("cash");
   const [hours, setHours] = useState(0);
+  const [completing, setCompleting] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null);
   const [editingNumber, setEditingNumber] = useState(false);
@@ -74,16 +75,24 @@ export default function ParkOutSheet({
   const isRefund = balance < 0;
   const settlementAmount = Math.abs(balance);
 
-  const handleComplete = () => {
-    completeSession(session.id, totalAmount, balance, balance !== 0 ? paymentMode : undefined);
+  const handleComplete = async () => {
+    if (completing) return;
+    setCompleting(true);
+    // The estimate above (totalAmount/balance) is for instant on-screen display
+    // only — the server recomputes the real total and balance at this exact
+    // moment and that's what's actually written to the database.
+    const updated = await completeSession(session.id, balance !== 0 ? paymentMode : undefined);
+    setCompleting(false);
+    if (!updated) return;
+    const finalBalance = updated.amountPaidAtExit ?? 0;
     onCompleted({
-      tokenCode: session.tokenCode,
+      tokenCode: updated.tokenCode,
       vehicleTypeName: vehicleType.name,
       vehicleNumber: displayNumber,
-      totalAmount,
+      totalAmount: updated.totalAmount ?? 0,
       duration: formatDuration(hours),
       isMember: isMemberVisit,
-      refundAmount: isRefund ? settlementAmount : undefined,
+      refundAmount: finalBalance < 0 ? Math.abs(finalBalance) : undefined,
     });
     onClose();
   };
@@ -211,8 +220,14 @@ export default function ParkOutSheet({
           </>
         )}
 
-        <Button variant="contained" size="large" fullWidth onClick={handleComplete}>
-          {isRefund ? "Refund & Mark Out" : settlementAmount > 0 ? "Collect Balance & Mark Out" : "Mark Vehicle Out"}
+        <Button variant="contained" size="large" fullWidth disabled={completing} onClick={handleComplete}>
+          {completing
+            ? "Marking Out…"
+            : isRefund
+              ? "Refund & Mark Out"
+              : settlementAmount > 0
+                ? "Collect Balance & Mark Out"
+                : "Mark Vehicle Out"}
         </Button>
       </Box>
 

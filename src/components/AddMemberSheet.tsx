@@ -100,6 +100,7 @@ export default function AddMemberSheet({ open, onClose }: { open: boolean; onClo
   const [durationMonths, setDurationMonths] = useState(MEMBERSHIP_DURATIONS[0]);
   const [paymentMode, setPaymentMode] = useState<PaymentMode>("cash");
   const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
 
   const vehiclePhoto = usePhotoCapture();
   const idPhoto = usePhotoCapture();
@@ -107,37 +108,45 @@ export default function AddMemberSheet({ open, onClose }: { open: boolean; onClo
   const selectedVehicleType = vehicleTypes.find((vt) => vt.id === vehicleTypeId)!;
   const amount = getMembershipPrice(selectedVehicleType, durationMonths);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!vehicleNumber.trim()) {
       setError("Vehicle number is required");
       return;
     }
-    const hasAddress = Object.values(customerAddress).some((v) => v && v.trim());
-    const hasIdProof = idProofNumber.trim() || idPhoto.photoUrl;
-    addMember({
-      vehicleNumber: vehicleNumber.trim().toUpperCase(),
-      vehicleTypeId,
-      customerName: customerName.trim() || undefined,
-      customerPhone: customerPhone.trim() || undefined,
-      customerAddress: hasAddress ? customerAddress : undefined,
-      idProof: hasIdProof
-        ? { type: idProofType, number: idProofNumber.trim() || undefined, photoUrl: idPhoto.photoUrl }
-        : undefined,
-      vehiclePhotoUrl: vehiclePhoto.photoUrl,
-      durationMonths,
-      paymentMode,
-    });
-    setVehicleNumber("");
-    setCustomerName("");
-    setCustomerPhone("");
-    setCustomerAddress({});
-    setIdProofType(ID_PROOF_TYPES[0]);
-    setIdProofNumber("");
-    vehiclePhoto.reset();
-    idPhoto.reset();
-    setDurationMonths(MEMBERSHIP_DURATIONS[0]);
-    setError("");
-    onClose();
+    if (saving) return;
+    setSaving(true);
+    try {
+      const hasAddress = Object.values(customerAddress).some((v) => v && v.trim());
+      const hasIdProof = idProofNumber.trim() || idPhoto.photoUrl;
+      await addMember({
+        vehicleNumber: vehicleNumber.trim().toUpperCase(),
+        vehicleTypeId,
+        customerName: customerName.trim() || undefined,
+        customerPhone: customerPhone.trim() || undefined,
+        customerAddress: hasAddress ? customerAddress : undefined,
+        idProof: hasIdProof
+          ? { type: idProofType, number: idProofNumber.trim() || undefined, photoUrl: idPhoto.photoUrl }
+          : undefined,
+        vehiclePhotoUrl: vehiclePhoto.photoUrl,
+        durationMonths,
+        paymentMode,
+      });
+      setVehicleNumber("");
+      setCustomerName("");
+      setCustomerPhone("");
+      setCustomerAddress({});
+      setIdProofType(ID_PROOF_TYPES[0]);
+      setIdProofNumber("");
+      vehiclePhoto.reset();
+      idPhoto.reset();
+      setDurationMonths(MEMBERSHIP_DURATIONS[0]);
+      setError("");
+      onClose();
+    } catch {
+      setError("Could not add member — please try again");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -360,8 +369,8 @@ export default function AddMemberSheet({ open, onClose }: { open: boolean; onClo
         </Typography>
         <PaymentModeToggle value={paymentMode} onChange={setPaymentMode} sx={{ mt: 0.5, mb: 3 }} />
 
-        <Button variant="contained" size="large" fullWidth onClick={handleSave}>
-          Add Member &amp; Collect Fee
+        <Button variant="contained" size="large" fullWidth disabled={saving} onClick={handleSave}>
+          {saving ? "Adding…" : "Add Member & Collect Fee"}
         </Button>
       </Box>
 

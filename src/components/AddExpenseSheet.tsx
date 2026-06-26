@@ -53,6 +53,7 @@ export default function AddExpenseSheet({
   const [date, setDate] = useState<Dayjs>(today);
   const [dateOpen, setDateOpen] = useState(false);
   const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
 
   const isEditing = Boolean(editingExpense);
   const isOther = category === OTHER_CATEGORY;
@@ -74,18 +75,26 @@ export default function AddExpenseSheet({
     setError("");
   }, [open, editingExpense]);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const value = parseFloat(amount);
     if (!value || value <= 0) {
       setError("Enter a valid cost");
       return;
     }
-    if (isEditing && editingExpense) {
-      updateExpense(editingExpense.id, value, category, note.trim() || undefined, date.toDate().toISOString());
-    } else {
-      addExpense(value, category, note.trim() || undefined, date.toDate().toISOString());
+    if (saving) return;
+    setSaving(true);
+    try {
+      if (isEditing && editingExpense) {
+        await updateExpense(editingExpense.id, value, category, note.trim() || undefined, date.toDate().toISOString());
+      } else {
+        await addExpense(value, category, note.trim() || undefined, date.toDate().toISOString());
+      }
+      onClose();
+    } catch {
+      setError("Could not save — please try again");
+    } finally {
+      setSaving(false);
     }
-    onClose();
   };
 
   return (
@@ -164,10 +173,11 @@ export default function AddExpenseSheet({
           variant="contained"
           size="large"
           fullWidth
+          disabled={saving}
           onClick={handleSave}
           sx={{ borderRadius: 6, py: 1.3, fontWeight: 600, boxShadow: "0 6px 16px rgba(0,101,143,0.35)" }}
         >
-          {isEditing ? "Save Changes" : "Save Expense"}
+          {saving ? "Saving…" : isEditing ? "Save Changes" : "Save Expense"}
         </Button>
       </Box>
     </Drawer>

@@ -21,6 +21,7 @@ export default function RenewMemberSheet({ member, onClose }: { member: Member |
   const { vehicleTypes, renewMember } = useAppStore();
   const [durationMonths, setDurationMonths] = useState(MEMBERSHIP_DURATIONS[0]);
   const [paymentMode, setPaymentMode] = useState<PaymentMode>("cash");
+  const [renewing, setRenewing] = useState(false);
 
   useEffect(() => {
     if (member) setDurationMonths(member.durationMonths);
@@ -33,9 +34,15 @@ export default function RenewMemberSheet({ member, onClose }: { member: Member |
   const base = new Date(Math.max(new Date(member.expiryDate).getTime(), Date.now())).toISOString();
   const newExpiry = addMonths(base, durationMonths);
 
-  const handleRenew = () => {
-    renewMember(member.id, durationMonths, paymentMode);
-    onClose();
+  const handleRenew = async () => {
+    if (renewing) return;
+    setRenewing(true);
+    try {
+      await renewMember(member.id, durationMonths, paymentMode);
+      onClose();
+    } finally {
+      setRenewing(false);
+    }
   };
 
   return (
@@ -81,8 +88,8 @@ export default function RenewMemberSheet({ member, onClose }: { member: Member |
         </Typography>
         <PaymentModeToggle value={paymentMode} onChange={setPaymentMode} sx={{ mt: 0.5, mb: 3 }} />
 
-        <Button variant="contained" size="large" fullWidth onClick={handleRenew}>
-          Collect &amp; Renew
+        <Button variant="contained" size="large" fullWidth disabled={renewing} onClick={handleRenew}>
+          {renewing ? "Renewing…" : "Collect & Renew"}
         </Button>
       </Box>
     </Drawer>
