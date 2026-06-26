@@ -192,7 +192,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      const { data: profile } = await supabase
+      const { data: profile, error: profileError } = await supabase
         .from("profiles")
         .select("name, phone, address, role, business_id")
         .eq("id", userId)
@@ -200,8 +200,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
       if (!active) return;
 
+      if (profileError) {
+        console.error("Failed to load profile after sign-in:", profileError);
+      }
+
       if (!profile) {
-        // Signed in but the profile/business setup never completed.
+        // Signed in but the profile/business setup never completed (or the
+        // lookup failed — see console for the underlying error, if any).
         setIsAuthenticated(false);
         setAuthChecked(true);
         return;
