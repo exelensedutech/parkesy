@@ -178,6 +178,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     let active = true;
 
     async function loadForSession(userId: string | null) {
+      // Mark "still checking" immediately for every transition (not just the
+      // first one) — otherwise a stale isAuthenticated=false from the previous
+      // check can cause a premature redirect while this fetch is in flight.
+      setAuthChecked(false);
+
       if (!userId) {
         if (active) {
           setIsAuthenticated(false);

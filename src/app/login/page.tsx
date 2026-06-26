@@ -37,13 +37,15 @@ export default function LoginPage() {
     if (!phoneValid || value.length !== 6 || loggingIn) return;
     setLoggingIn(true);
     const ok = await login(phone, value);
-    setLoggingIn(false);
     if (ok) {
-      router.replace("/");
-    } else {
-      setLoginError(true);
-      setPassword(EMPTY_6);
+      // Don't navigate here — the effect above redirects once the store has
+      // actually finished loading the profile/business, avoiding a race where
+      // we'd land on "/" before isAuthenticated reflects the new session.
+      return;
     }
+    setLoggingIn(false);
+    setLoginError(true);
+    setPassword(EMPTY_6);
   };
 
   if (!authChecked || isAuthenticated) {
