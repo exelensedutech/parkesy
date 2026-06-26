@@ -22,16 +22,14 @@ export function isSameMonth(iso: string, reference: Date): boolean {
   return d.getMonth() === reference.getMonth() && d.getFullYear() === reference.getFullYear();
 }
 
-export function dateToInputValue(date: Date): string {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, "0");
-  const d = String(date.getDate()).padStart(2, "0");
-  return `${y}-${m}-${d}`;
+export function isWithinRange(iso: string, start: Date, end: Date): boolean {
+  const t = new Date(iso).getTime();
+  return t >= start.getTime() && t <= end.getTime();
 }
 
-export function addOneMonth(iso: string): string {
+export function addMonths(iso: string, months: number): string {
   const d = new Date(iso);
-  d.setMonth(d.getMonth() + 1);
+  d.setMonth(d.getMonth() + months);
   return d.toISOString();
 }
 
@@ -58,7 +56,8 @@ export function calculateAmount(vehicleType: VehicleType, hours: number): number
     if (slab.type === "flat") {
       amount += slab.amount;
     } else {
-      amount += Math.ceil(slabHours) * slab.amount;
+      const unit = slab.unitHours ?? 1;
+      amount += Math.ceil(slabHours / unit) * slab.amount;
     }
     if (slab.toHour !== null && hours <= slab.toHour) break;
   }

@@ -3,6 +3,7 @@ import { Roboto } from "next/font/google";
 import { AppRouterCacheProvider } from "@mui/material-nextjs/v16-appRouter";
 import { ThemeProvider } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
+import DatePickerProvider from "@/components/DatePickerProvider";
 import { theme } from "@/theme";
 import { AppProvider } from "@/lib/store";
 import "./globals.css";
@@ -35,7 +36,9 @@ export default function RootLayout({
         <AppRouterCacheProvider>
           <ThemeProvider theme={theme}>
             <CssBaseline />
-            <AppProvider>{children}</AppProvider>
+            <DatePickerProvider>
+              <AppProvider>{children}</AppProvider>
+            </DatePickerProvider>
           </ThemeProvider>
         </AppRouterCacheProvider>
       </body>

@@ -1,5 +1,7 @@
 export type Role = "owner" | "employee";
 
+export type VehicleNumberCaptureMode = "full" | "last4";
+
 export type VehicleTypeName = "Bike" | "Cycle" | "Car";
 
 export interface RateSlab {
@@ -8,6 +10,28 @@ export interface RateSlab {
   toHour: number | null; // null = unbounded ("and beyond")
   amount: number;
   type: "flat" | "per_hour";
+  unitHours?: number; // for "per_hour" slabs — bill `amount` per this many hours (default 1)
+}
+
+export interface MembershipPrice {
+  durationMonths: number;
+  price: number;
+}
+
+export interface Address {
+  doorStreet?: string;
+  city?: string;
+  pincode?: string;
+  state?: string;
+}
+
+export const ID_PROOF_TYPES = ["Aadhaar", "Driving Licence", "Voter ID", "PAN Card", "Passport", "Other"] as const;
+export type IdProofType = (typeof ID_PROOF_TYPES)[number];
+
+export interface IdProof {
+  type: IdProofType;
+  number?: string;
+  photoUrl?: string;
 }
 
 export interface VehicleType {
@@ -15,6 +39,7 @@ export interface VehicleType {
   name: VehicleTypeName;
   slabs: RateSlab[];
   totalSlots: number;
+  membershipPricing: MembershipPrice[];
 }
 
 export type PaymentMode = "cash" | "online";
@@ -34,7 +59,8 @@ export interface ParkingSession {
   amountPaidAtExit?: number;
   paymentModeAtExit?: PaymentMode;
   totalAmount?: number; // computed total cost, set once the vehicle exits
-  recordedBy: string;
+  recordedBy: string; // who logged the entry
+  exitRecordedBy?: string; // who logged the exit/collected the exit balance or refund
   status: SessionStatus;
   memberId?: string; // set when this visit was covered by an active membership
 }
@@ -53,7 +79,12 @@ export interface Member {
   vehicleNumber: string; // uppercase, trimmed — the matching key at Park-In
   vehicleTypeId: string;
   customerName?: string;
-  monthlyFee: number;
+  customerPhone?: string;
+  customerAddress?: Address;
+  idProof?: IdProof;
+  vehiclePhotoUrl?: string;
+  durationMonths: number;
+  feeAmount: number; // total fee for this membership period (looked up from VehicleType.membershipPricing)
   startDate: string; // ISO
   expiryDate: string; // ISO
   recordedBy: string;
@@ -66,4 +97,5 @@ export interface MemberPayment {
   paymentMode: PaymentMode;
   paidAt: string; // ISO
   type: "signup" | "renewal";
+  recordedBy: string;
 }

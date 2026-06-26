@@ -18,8 +18,6 @@ import PaymentsIcon from "@mui/icons-material/Payments";
 import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
 import LocalAtmIcon from "@mui/icons-material/LocalAtm";
 import CreditCardIcon from "@mui/icons-material/CreditCard";
-import TrendingUpIcon from "@mui/icons-material/TrendingUp";
-import TrendingDownIcon from "@mui/icons-material/TrendingDown";
 import VehicleIcon from "@/components/VehicleIcon";
 import { useAppStore } from "@/lib/store";
 import { isSameDay, isSameMonth } from "@/lib/calc";
@@ -84,6 +82,8 @@ export default function HomePage() {
   const netMonth = collectedMonth - expensesMonth;
   const monthTotal = collectedMonth + expensesMonth || 1;
   const collectedSharePct = (collectedMonth / monthTotal) * 100;
+  const todayTotal = collectedToday + expensesToday || 1;
+  const todaySharePct = (collectedToday / todayTotal) * 100;
 
   const trafficMetrics = [
     { label: "Entered Today", value: enteredToday, icon: <LoginIcon />, color: "#1565C0" },
@@ -161,29 +161,50 @@ export default function HomePage() {
           <Typography variant="overline" sx={{ fontWeight: 700, color: "text.secondary", letterSpacing: 1 }}>
             Today
           </Typography>
-          <Stack
-            direction="row"
-            sx={{
-              justifyContent: "space-between",
-              alignItems: "center",
-              p: 1,
-              mt: 0.5,
-              mb: 2,
-              borderRadius: 2,
-              bgcolor: alpha(netColor, 0.08),
-            }}
-          >
-            <Stack direction="row" spacing={1.25} sx={{ alignItems: "center" }}>
-              <Avatar sx={{ bgcolor: alpha(netColor, 0.15), color: netColor, width: 32, height: 32 }}>
-                {netToday >= 0 ? <TrendingUpIcon fontSize="small" /> : <TrendingDownIcon fontSize="small" />}
-              </Avatar>
-              <Typography variant="body2" color="text.secondary">
-                Net Profit
+          <Grid container spacing={1.5} sx={{ mb: 2, mt: 0.5 }}>
+            <Grid size={4}>
+              <Typography variant="caption" color="text.secondary">
+                Collected
+              </Typography>
+              <Typography variant="h6" sx={{ fontWeight: 700, color: GREEN }}>
+                ₹{collectedToday}
+              </Typography>
+            </Grid>
+            <Grid size={4}>
+              <Typography variant="caption" color="text.secondary">
+                Expenses
+              </Typography>
+              <Typography variant="h6" sx={{ fontWeight: 700, color: ORANGE }}>
+                ₹{expensesToday}
+              </Typography>
+            </Grid>
+            <Grid size={4}>
+              <Typography variant="caption" color="text.secondary">
+                Net
+              </Typography>
+              <Typography variant="h6" sx={{ fontWeight: 700, color: netColor }}>
+                ₹{netToday}
+              </Typography>
+            </Grid>
+          </Grid>
+
+          <Box sx={{ display: "flex", height: 10, borderRadius: 5, overflow: "hidden", bgcolor: "grey.100", mb: 1 }}>
+            <Box sx={{ width: `${todaySharePct}%`, bgcolor: GREEN }} />
+            <Box sx={{ width: `${100 - todaySharePct}%`, bgcolor: ORANGE }} />
+          </Box>
+          <Stack direction="row" spacing={2.5} sx={{ mb: 2 }}>
+            <Stack direction="row" spacing={0.75} sx={{ alignItems: "center" }}>
+              <Box sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: GREEN }} />
+              <Typography variant="caption" color="text.secondary">
+                Collected
               </Typography>
             </Stack>
-            <Typography variant="h6" sx={{ fontWeight: 700, color: netColor }}>
-              ₹{netToday}
-            </Typography>
+            <Stack direction="row" spacing={0.75} sx={{ alignItems: "center" }}>
+              <Box sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: ORANGE }} />
+              <Typography variant="caption" color="text.secondary">
+                Expenses
+              </Typography>
+            </Stack>
           </Stack>
 
           <Divider sx={{ mb: 2 }} />

@@ -29,7 +29,8 @@ import { PaymentMode } from "@/lib/types";
 import { VEHICLE_COLORS, CASH_COLOR, ONLINE_COLOR } from "@/lib/colors";
 
 export default function ParkInForm() {
-  const { vehicleTypes, startSession, findActiveMember } = useAppStore();
+  const { vehicleTypes, startSession, findActiveMember, vehicleNumberCaptureMode, collectAtCheckIn } = useAppStore();
+  const isLast4Mode = vehicleNumberCaptureMode === "last4";
   const [vehicleTypeId, setVehicleTypeId] = useState(vehicleTypes[0].id);
   const [vehicleNumber, setVehicleNumber] = useState("");
   const [amountPaid, setAmountPaid] = useState("");
@@ -144,16 +145,18 @@ export default function ParkInForm() {
 
           {!isCycle && (
             <TextField
-              label="Vehicle number"
+              label={isLast4Mode ? "Last 4 digits" : "Vehicle number"}
               fullWidth
               value={vehicleNumber}
               onChange={(e) => {
-                setVehicleNumber(e.target.value);
+                const next = isLast4Mode ? e.target.value.replace(/\D/g, "").slice(0, 4) : e.target.value;
+                setVehicleNumber(next);
                 setNumberError("");
               }}
               error={Boolean(numberError)}
               helperText={numberError || " "}
               slotProps={{
+                htmlInput: isLast4Mode ? { inputMode: "numeric", pattern: "[0-9]*", maxLength: 4 } : undefined,
                 input: {
                   endAdornment: (
                     <InputAdornment position="end">
@@ -199,7 +202,7 @@ export default function ParkInForm() {
         </CardContent>
       </Card>
 
-      {!activeMember && (
+      {!activeMember && collectAtCheckIn && (
         <>
           <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
             Payment

@@ -4,21 +4,32 @@ import { useEffect, useState } from "react";
 import Drawer from "@mui/material/Drawer";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
+import TextField from "@mui/material/TextField";
 import Button from "@mui/material/Button";
-import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
-import ToggleButton from "@mui/material/ToggleButton";
 import Divider from "@mui/material/Divider";
 import Stack from "@mui/material/Stack";
 import Avatar from "@mui/material/Avatar";
+import IconButton from "@mui/material/IconButton";
+import Menu from "@mui/material/Menu";
+import MenuItem from "@mui/material/MenuItem";
+import ListItemIcon from "@mui/material/ListItemIcon";
+import ListItemText from "@mui/material/ListItemText";
 import Dialog from "@mui/material/Dialog";
 import DialogContent from "@mui/material/DialogContent";
 import QrCode2Icon from "@mui/icons-material/QrCode2";
 import CardMembershipIcon from "@mui/icons-material/CardMembership";
+import MoreVertIcon from "@mui/icons-material/MoreVert";
+import EditIcon from "@mui/icons-material/Edit";
+import CheckIcon from "@mui/icons-material/Check";
+import CloseIcon from "@mui/icons-material/Close";
 import Alert from "@mui/material/Alert";
+import SheetHandle from "./SheetHandle";
+import PaymentModeToggle from "./PaymentModeToggle";
 import { useAppStore } from "@/lib/store";
 import { ParkingSession, PaymentMode } from "@/lib/types";
 import { calculateAmount, durationHours, formatDuration } from "@/lib/calc";
 import { ParkExitConfirmation } from "./ParkExitConfirmationDialog";
+import { BOTTOM_SHEET_PAPER_SX } from "@/lib/sheetStyles";
 
 export default function ParkOutSheet({
   session,
@@ -29,10 +40,14 @@ export default function ParkOutSheet({
   onClose: () => void;
   onCompleted: (confirmation: ParkExitConfirmation) => void;
 }) {
-  const { vehicleTypes, completeSession } = useAppStore();
+  const { vehicleTypes, completeSession, updateSessionVehicleNumber } = useAppStore();
   const [paymentMode, setPaymentMode] = useState<PaymentMode>("cash");
   const [hours, setHours] = useState(0);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null);
+  const [editingNumber, setEditingNumber] = useState(false);
+  const [numberDraft, setNumberDraft] = useState("");
+  const [displayNumber, setDisplayNumber] = useState("");
 
   useEffect(() => {
     if (!session) return;
@@ -41,54 +56,108 @@ export default function ParkOutSheet({
     return () => clearInterval(interval);
   }, [session]);
 
+  useEffect(() => {
+    if (session) {
+      setDisplayNumber(session.vehicleNumber);
+      setEditingNumber(false);
+    }
+    // Only reset when a different session is opened, not on every store re-render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.id]);
+
   if (!session) return null;
 
   const vehicleType = vehicleTypes.find((vt) => vt.id === session.vehicleTypeId)!;
   const isMemberVisit = Boolean(session.memberId);
   const totalAmount = isMemberVisit ? 0 : calculateAmount(vehicleType, hours);
-  const balanceDue = isMemberVisit ? 0 : Math.max(totalAmount - session.amountPaidAtEntry, 0);
+  const balance = isMemberVisit ? 0 : totalAmount - session.amountPaidAtEntry;
+  const isRefund = balance < 0;
+  const settlementAmount = Math.abs(balance);
 
   const handleComplete = () => {
-    completeSession(session.id, totalAmount, balanceDue, balanceDue > 0 ? paymentMode : undefined);
+    completeSession(session.id, totalAmount, balance, balance !== 0 ? paymentMode : undefined);
     onCompleted({
       tokenCode: session.tokenCode,
       vehicleTypeName: vehicleType.name,
-      vehicleNumber: session.vehicleNumber,
+      vehicleNumber: displayNumber,
       totalAmount,
       duration: formatDuration(hours),
       isMember: isMemberVisit,
+      refundAmount: isRefund ? settlementAmount : undefined,
     });
     onClose();
   };
 
+  const handleEditClick = () => {
+    setMenuAnchor(null);
+    setNumberDraft(displayNumber);
+    setEditingNumber(true);
+  };
+
+  const handleSaveNumber = () => {
+    const trimmed = numberDraft.trim().toUpperCase();
+    if (!trimmed) return;
+    updateSessionVehicleNumber(session.id, trimmed);
+    setDisplayNumber(trimmed);
+    setEditingNumber(false);
+  };
+
   return (
-    <Drawer
-      anchor="bottom"
-      open={!!session}
-      onClose={onClose}
-      slotProps={{ paper: { sx: { borderTopLeftRadius: 20, borderTopRightRadius: 20 } } }}
-    >
+    <Drawer anchor="bottom" open={!!session} onClose={onClose} slotProps={{ paper: { sx: BOTTOM_SHEET_PAPER_SX } }}>
       <Box sx={{ p: 3, pb: 4 }}>
+        <SheetHandle />
         <Stack direction="row" sx={{ justifyContent: "space-between", alignItems: "center", mb: 2 }}>
           <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
             <QrCode2Icon color="primary" />
             <Typography variant="h6">{session.tokenCode}</Typography>
           </Stack>
-          {session.vehiclePhotoUrl && (
-            <Avatar
-              src={session.vehiclePhotoUrl}
-              variant="rounded"
-              sx={{ width: 48, height: 48, cursor: "pointer" }}
-              onClick={() => setPreviewOpen(true)}
-            />
-          )}
+          <Stack direction="row" spacing={0.5} sx={{ alignItems: "center" }}>
+            {session.vehiclePhotoUrl && (
+              <Avatar
+                src={session.vehiclePhotoUrl}
+                variant="rounded"
+                sx={{ width: 48, height: 48, cursor: "pointer" }}
+                onClick={() => setPreviewOpen(true)}
+              />
+            )}
+            <IconButton onClick={(e) => setMenuAnchor(e.currentTarget)} aria-label="More options">
+              <MoreVertIcon />
+            </IconButton>
+            <Menu anchorEl={menuAnchor} open={!!menuAnchor} onClose={() => setMenuAnchor(null)}>
+              <MenuItem onClick={handleEditClick}>
+                <ListItemIcon>
+                  <EditIcon fontSize="small" />
+                </ListItemIcon>
+                <ListItemText>Edit vehicle number</ListItemText>
+              </MenuItem>
+            </Menu>
+          </Stack>
         </Stack>
 
         <Stack spacing={0.5} sx={{ mb: 2 }}>
-          <Typography variant="body2" color="text.secondary">
-            {vehicleType.name}
-            {session.vehicleNumber ? ` · ${session.vehicleNumber}` : ""}
-          </Typography>
+          {editingNumber ? (
+            <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+              <TextField
+                size="small"
+                label="Vehicle number"
+                fullWidth
+                autoFocus
+                value={numberDraft}
+                onChange={(e) => setNumberDraft(e.target.value)}
+              />
+              <IconButton color="primary" onClick={handleSaveNumber} aria-label="Save">
+                <CheckIcon />
+              </IconButton>
+              <IconButton onClick={() => setEditingNumber(false)} aria-label="Cancel">
+                <CloseIcon />
+              </IconButton>
+            </Stack>
+          ) : (
+            <Typography variant="body2" color="text.secondary">
+              {vehicleType.name}
+              {displayNumber ? ` · ${displayNumber}` : ""}
+            </Typography>
+          )}
           <Typography variant="body2" color="text.secondary">
             In:{" "}
             {new Date(session.entryTime).toLocaleString("en-IN", {
@@ -124,35 +193,26 @@ export default function ParkOutSheet({
               <Typography variant="body2">₹{session.amountPaidAtEntry}</Typography>
             </Stack>
 
-            <Typography variant="overline" color="text.secondary">
-              Balance due
+            <Typography variant="overline" color={isRefund ? "error" : "text.secondary"}>
+              {isRefund ? "Refund to customer" : "Balance due"}
             </Typography>
-            <Typography variant="h3" sx={{ mb: 3 }}>
-              ₹{balanceDue}
+            <Typography variant="h3" sx={{ mb: 3 }} color={isRefund ? "error.main" : "text.primary"}>
+              {isRefund ? "-" : ""}₹{settlementAmount}
             </Typography>
           </>
         )}
 
-        {balanceDue > 0 && (
+        {settlementAmount > 0 && (
           <>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-              Payment mode
+              {isRefund ? "Refund via" : "Payment mode"}
             </Typography>
-            <ToggleButtonGroup
-              value={paymentMode}
-              exclusive
-              onChange={(_, value) => value && setPaymentMode(value)}
-              fullWidth
-              sx={{ mb: 3 }}
-            >
-              <ToggleButton value="cash">Cash</ToggleButton>
-              <ToggleButton value="online">Online</ToggleButton>
-            </ToggleButtonGroup>
+            <PaymentModeToggle value={paymentMode} onChange={setPaymentMode} sx={{ mb: 3 }} />
           </>
         )}
 
         <Button variant="contained" size="large" fullWidth onClick={handleComplete}>
-          {balanceDue > 0 ? "Collect Balance & Mark Out" : "Mark Vehicle Out"}
+          {isRefund ? "Refund & Mark Out" : settlementAmount > 0 ? "Collect Balance & Mark Out" : "Mark Vehicle Out"}
         </Button>
       </Box>
 

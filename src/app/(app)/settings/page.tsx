@@ -3,25 +3,28 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Typography from "@mui/material/Typography";
-import List from "@mui/material/List";
-import ListItemButton from "@mui/material/ListItemButton";
-import ListItemIcon from "@mui/material/ListItemIcon";
-import ListItemText from "@mui/material/ListItemText";
-import ChevronRightIcon from "@mui/icons-material/ChevronRight";
+import Stack from "@mui/material/Stack";
 import AssessmentIcon from "@mui/icons-material/Assessment";
 import StoreIcon from "@mui/icons-material/Store";
 import CardMembershipIcon from "@mui/icons-material/CardMembership";
-import EditBusinessNameSheet from "@/components/EditBusinessNameSheet";
-import EditSlotsSheet from "@/components/EditSlotsSheet";
+import TuneIcon from "@mui/icons-material/Tune";
+import EditBusinessDetailsSheet from "@/components/EditBusinessDetailsSheet";
+import EditVehicleTypeSheet from "@/components/EditVehicleTypeSheet";
+import AdvancedPreferencesSheet from "@/components/AdvancedPreferencesSheet";
 import VehicleIcon from "@/components/VehicleIcon";
+import { SettingsRow } from "@/components/SettingsRow";
 import { useAppStore } from "@/lib/store";
 import { VehicleType } from "@/lib/types";
+import { VEHICLE_COLORS } from "@/lib/colors";
+
+const PRIMARY = "#00658F";
 
 export default function SettingsPage() {
-  const { role, businessName, vehicleTypes, members } = useAppStore();
+  const { role, businessName, businessPhone, vehicleTypes, members } = useAppStore();
   const router = useRouter();
-  const [editingName, setEditingName] = useState(false);
-  const [editingSlotsFor, setEditingSlotsFor] = useState<VehicleType | null>(null);
+  const [editingDetails, setEditingDetails] = useState(false);
+  const [editingVehicleType, setEditingVehicleType] = useState<VehicleType | null>(null);
+  const [advancedOpen, setAdvancedOpen] = useState(false);
 
   const activeMemberCount = members.filter((m) => new Date(m.expiryDate).getTime() >= Date.now()).length;
 
@@ -35,66 +38,89 @@ export default function SettingsPage() {
 
   return (
     <>
-      <Typography variant="h6" sx={{ mb: 2 }}>
+      <Typography variant="h5" sx={{ fontWeight: 700, mb: 2.5 }}>
         Settings
       </Typography>
 
-      <Typography variant="caption" color="text.secondary">
-        BUSINESS PROFILE
+      <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
+        Business
       </Typography>
-      <List sx={{ bgcolor: "background.paper", borderRadius: 2, mb: 3, mt: 0.5 }}>
-        <ListItemButton onClick={() => setEditingName(true)}>
-          <ListItemIcon>
-            <StoreIcon />
-          </ListItemIcon>
-          <ListItemText primary="Business Name" secondary={businessName} />
-          <ChevronRightIcon color="action" />
-        </ListItemButton>
-      </List>
+      <Stack spacing={1.5} sx={{ mb: 2.5 }}>
+        <SettingsRow
+          icon={<StoreIcon />}
+          color={PRIMARY}
+          title="Business Details"
+          subtitle={businessPhone ? `${businessName} · ${businessPhone}` : businessName}
+          onClick={() => setEditingDetails(true)}
+        />
+      </Stack>
 
-      <Typography variant="caption" color="text.secondary">
-        PARKING CAPACITY
+      <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
+        Vehicle Types
       </Typography>
-      <List sx={{ bgcolor: "background.paper", borderRadius: 2, mb: 3, mt: 0.5 }}>
-        {vehicleTypes.map((vt) => (
-          <ListItemButton key={vt.id} onClick={() => setEditingSlotsFor(vt)}>
-            <ListItemIcon>
-              <VehicleIcon name={vt.name} />
-            </ListItemIcon>
-            <ListItemText primary={vt.name} secondary={`${vt.totalSlots} total slots`} />
-            <ChevronRightIcon color="action" />
-          </ListItemButton>
-        ))}
-      </List>
+      <Stack spacing={1.5} sx={{ mb: 2.5 }}>
+        {vehicleTypes.map((vt) => {
+          const sorted = [...vt.slabs].sort((a, b) => a.order - b.order);
+          const [slab1, slab2] = sorted;
+          const rateSummary =
+            slab1 && slab2
+              ? `₹${slab1.amount} first ${slab1.toHour}h, then ₹${slab2.amount}/${slab2.unitHours ?? 1}h`
+              : "Tap to configure";
+          return (
+            <SettingsRow
+              key={vt.id}
+              icon={<VehicleIcon name={vt.name} />}
+              color={VEHICLE_COLORS[vt.name]}
+              title={vt.name}
+              subtitle={`${vt.totalSlots} slots · ${rateSummary}`}
+              onClick={() => setEditingVehicleType(vt)}
+            />
+          );
+        })}
+      </Stack>
 
-      <Typography variant="caption" color="text.secondary">
-        MEMBERSHIPS
+      <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
+        Memberships
       </Typography>
-      <List sx={{ bgcolor: "background.paper", borderRadius: 2, mb: 3, mt: 0.5 }}>
-        <ListItemButton onClick={() => router.push("/settings/members")}>
-          <ListItemIcon>
-            <CardMembershipIcon />
-          </ListItemIcon>
-          <ListItemText primary="Members" secondary={`${activeMemberCount} active monthly pass${activeMemberCount === 1 ? "" : "es"}`} />
-          <ChevronRightIcon color="action" />
-        </ListItemButton>
-      </List>
+      <Stack spacing={1.5} sx={{ mb: 2.5 }}>
+        <SettingsRow
+          icon={<CardMembershipIcon />}
+          color={PRIMARY}
+          title="Members"
+          subtitle={`${activeMemberCount} active membership${activeMemberCount === 1 ? "" : "s"}`}
+          onClick={() => router.push("/settings/members")}
+        />
+      </Stack>
 
-      <Typography variant="caption" color="text.secondary">
-        REPORTS
+      <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
+        Reports
       </Typography>
-      <List sx={{ bgcolor: "background.paper", borderRadius: 2, mt: 0.5 }}>
-        <ListItemButton onClick={() => router.push("/settings/reports")}>
-          <ListItemIcon>
-            <AssessmentIcon />
-          </ListItemIcon>
-          <ListItemText primary="Reports & History" secondary="View collections, expenses and net for any past day" />
-          <ChevronRightIcon color="action" />
-        </ListItemButton>
-      </List>
+      <Stack spacing={1.5} sx={{ mb: 2.5 }}>
+        <SettingsRow
+          icon={<AssessmentIcon />}
+          color={PRIMARY}
+          title="Reports"
+          subtitle="Financial and operational insights"
+          onClick={() => router.push("/settings/reports")}
+        />
+      </Stack>
 
-      <EditBusinessNameSheet open={editingName} onClose={() => setEditingName(false)} />
-      <EditSlotsSheet vehicleType={editingSlotsFor} onClose={() => setEditingSlotsFor(null)} />
+      <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
+        More Settings
+      </Typography>
+      <Stack spacing={1.5}>
+        <SettingsRow
+          icon={<TuneIcon />}
+          color={PRIMARY}
+          title="Advanced Preferences"
+          subtitle="Vehicle number capture, check-in payment & more"
+          onClick={() => setAdvancedOpen(true)}
+        />
+      </Stack>
+
+      <EditBusinessDetailsSheet open={editingDetails} onClose={() => setEditingDetails(false)} />
+      <EditVehicleTypeSheet vehicleType={editingVehicleType} onClose={() => setEditingVehicleType(null)} />
+      <AdvancedPreferencesSheet open={advancedOpen} onClose={() => setAdvancedOpen(false)} />
     </>
   );
 }

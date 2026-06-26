@@ -1,24 +1,83 @@
 "use client";
 
-import { useState } from "react";
 import { useRouter } from "next/navigation";
-import Box from "@mui/material/Box";
-import Card from "@mui/material/Card";
-import CardContent from "@mui/material/CardContent";
-import Typography from "@mui/material/Typography";
 import Stack from "@mui/material/Stack";
-import Grid from "@mui/material/Grid";
-import Divider from "@mui/material/Divider";
-import TextField from "@mui/material/TextField";
 import IconButton from "@mui/material/IconButton";
+import Typography from "@mui/material/Typography";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import EventIcon from "@mui/icons-material/Event";
+import BarChartIcon from "@mui/icons-material/BarChart";
+import CategoryIcon from "@mui/icons-material/Category";
+import BadgeIcon from "@mui/icons-material/Badge";
+import CurrencyExchangeIcon from "@mui/icons-material/CurrencyExchange";
+import AutorenewIcon from "@mui/icons-material/Autorenew";
+import AccessTimeIcon from "@mui/icons-material/AccessTime";
+import HourglassBottomIcon from "@mui/icons-material/HourglassBottom";
+import { SettingsRow } from "@/components/SettingsRow";
 import { useAppStore } from "@/lib/store";
-import { dateToInputValue, isSameDay } from "@/lib/calc";
 
-export default function ReportsHistoryPage() {
+const REPORTS = [
+  {
+    path: "/settings/reports/period",
+    icon: <EventIcon />,
+    color: "#00658F",
+    title: "Period Report",
+    subtitle: "Traffic and collections by vehicle type — daily, weekly or monthly",
+  },
+  {
+    path: "/settings/reports/collection-summary",
+    icon: <BarChartIcon />,
+    color: "#2E7D32",
+    title: "Collection Summary",
+    subtitle: "Revenue trend and breakdown over a date range",
+  },
+  {
+    path: "/settings/reports/vehicle-performance",
+    icon: <CategoryIcon />,
+    color: "#6A4C93",
+    title: "Vehicle-Type Performance",
+    subtitle: "Revenue, traffic and avg. duration per vehicle type",
+  },
+  {
+    path: "/settings/reports/staff-collections",
+    icon: <BadgeIcon />,
+    color: "#EF6C00",
+    title: "Staff Collections",
+    subtitle: "Collections and expenses grouped by who logged them",
+  },
+  {
+    path: "/settings/reports/refunds",
+    icon: <CurrencyExchangeIcon />,
+    color: "#C62828",
+    title: "Refunds & Adjustments",
+    subtitle: "Every checkout where money was refunded",
+  },
+  {
+    path: "/settings/reports/membership-renewals",
+    icon: <AutorenewIcon />,
+    color: "#00838F",
+    title: "Membership Renewals",
+    subtitle: "Expiring soon, lapsed, and renewal revenue",
+  },
+  {
+    path: "/settings/reports/peak-hours",
+    icon: <AccessTimeIcon />,
+    color: "#5E35B1",
+    title: "Peak Hours",
+    subtitle: "Busiest hours of day and days of week",
+  },
+  {
+    path: "/settings/reports/long-stay",
+    icon: <HourglassBottomIcon />,
+    color: "#AD1457",
+    title: "Long-Stay Alert",
+    subtitle: "Vehicles parked beyond your configured threshold",
+  },
+];
+
+export default function ReportsHubPage() {
   const router = useRouter();
-  const { role, sessions, expenses, vehicleTypes, members, memberPayments } = useAppStore();
-  const [dateValue, setDateValue] = useState(dateToInputValue(new Date()));
+  const { role } = useAppStore();
 
   if (role !== "owner") {
     return (
@@ -28,203 +87,28 @@ export default function ReportsHistoryPage() {
     );
   }
 
-  const selectedDate = new Date(`${dateValue}T00:00:00`);
-
-  const entriesOnDate = sessions.filter((s) => isSameDay(s.entryTime, selectedDate));
-  const exitsOnDate = sessions.filter((s) => s.status === "completed" && s.exitTime && isSameDay(s.exitTime, selectedDate));
-  const expensesOnDate = expenses.filter((e) => isSameDay(e.expenseDate, selectedDate));
-
-  const memberPaymentsOnDate = memberPayments.filter((mp) => isSameDay(mp.paidAt, selectedDate));
-
-  const entryCollected = entriesOnDate.reduce((sum, s) => sum + s.amountPaidAtEntry, 0);
-  const exitCollected = exitsOnDate.reduce((sum, s) => sum + (s.amountPaidAtExit ?? 0), 0);
-  const walkInCollected = entryCollected + exitCollected;
-  const memberRevenue = memberPaymentsOnDate.reduce((sum, mp) => sum + mp.amount, 0);
-  const collected = walkInCollected + memberRevenue;
-
-  const cashCollected =
-    entriesOnDate.filter((s) => s.paymentModeAtEntry === "cash").reduce((sum, s) => sum + s.amountPaidAtEntry, 0) +
-    exitsOnDate.filter((s) => s.paymentModeAtExit === "cash").reduce((sum, s) => sum + (s.amountPaidAtExit ?? 0), 0) +
-    memberPaymentsOnDate.filter((mp) => mp.paymentMode === "cash").reduce((sum, mp) => sum + mp.amount, 0);
-  const onlineCollected = collected - cashCollected;
-
-  const spent = expensesOnDate.reduce((sum, e) => sum + e.amount, 0);
-  const net = collected - spent;
-
   return (
     <>
-      <Stack direction="row" spacing={1} sx={{ alignItems: "center", mb: 2 }}>
+      <Stack direction="row" spacing={1} sx={{ alignItems: "center", mb: 0.5 }}>
         <IconButton onClick={() => router.push("/settings")} edge="start">
           <ArrowBackIcon />
         </IconButton>
-        <Typography variant="h6">Reports & History</Typography>
+        <Typography variant="h6">Reports</Typography>
       </Stack>
-
-      <TextField
-        label="Date"
-        type="date"
-        fullWidth
-        value={dateValue}
-        onChange={(e) => setDateValue(e.target.value)}
-        slotProps={{ htmlInput: { style: { textAlign: "left" } }, inputLabel: { shrink: true } }}
-        sx={{ mb: 3 }}
-      />
-
-      <Grid container spacing={1.5} sx={{ mb: 3 }}>
-        <Grid size={6}>
-          <Card>
-            <CardContent>
-              <Typography variant="caption" color="text.secondary">
-                Collected
-              </Typography>
-              <Typography variant="h5">₹{collected}</Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid size={6}>
-          <Card>
-            <CardContent>
-              <Typography variant="caption" color="text.secondary">
-                Expenses
-              </Typography>
-              <Typography variant="h5">₹{spent}</Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid size={12}>
-          <Card sx={{ bgcolor: net >= 0 ? "success.light" : "error.light" }}>
-            <CardContent>
-              <Typography variant="caption">Net (Profit / Loss)</Typography>
-              <Typography variant="h4">₹{net}</Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid size={6}>
-          <Card>
-            <CardContent>
-              <Typography variant="caption" color="text.secondary">
-                Cash collected
-              </Typography>
-              <Typography variant="h6">₹{cashCollected}</Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid size={6}>
-          <Card>
-            <CardContent>
-              <Typography variant="caption" color="text.secondary">
-                Online collected
-              </Typography>
-              <Typography variant="h6">₹{onlineCollected}</Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid size={6}>
-          <Card>
-            <CardContent>
-              <Typography variant="caption" color="text.secondary">
-                Walk-in revenue
-              </Typography>
-              <Typography variant="h6">₹{walkInCollected}</Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid size={6}>
-          <Card>
-            <CardContent>
-              <Typography variant="caption" color="text.secondary">
-                Member revenue
-              </Typography>
-              <Typography variant="h6">₹{memberRevenue}</Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
-
-      <Typography variant="subtitle1" sx={{ mb: 1 }}>
-        Vehicles Exited This Day
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 2.5, ml: 6 }}>
+        Financial and operational insights
       </Typography>
-      <Stack spacing={1} sx={{ mb: 3 }}>
-        {exitsOnDate.length === 0 && (
-          <Typography variant="body2" color="text.secondary">
-            No completed transactions on this day.
-          </Typography>
-        )}
-        {exitsOnDate.map((s) => {
-          const vt = vehicleTypes.find((v) => v.id === s.vehicleTypeId)!;
-          return (
-            <Card key={s.id}>
-              <CardContent sx={{ py: 1.5 }}>
-                <Stack direction="row" sx={{ justifyContent: "space-between", alignItems: "center" }}>
-                  <Box>
-                    <Typography variant="body2">
-                      {s.tokenCode} · {vt.name} · {s.vehicleNumber}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      {s.recordedBy}
-                    </Typography>
-                  </Box>
-                  <Typography variant="subtitle1">₹{s.totalAmount}</Typography>
-                </Stack>
-              </CardContent>
-            </Card>
-          );
-        })}
-      </Stack>
 
-      <Divider sx={{ mb: 2 }} />
-
-      <Typography variant="subtitle1" sx={{ mb: 1 }}>
-        Membership Payments This Day
-      </Typography>
-      <Stack spacing={1} sx={{ mb: 3 }}>
-        {memberPaymentsOnDate.length === 0 && (
-          <Typography variant="body2" color="text.secondary">
-            No membership signups or renewals on this day.
-          </Typography>
-        )}
-        {memberPaymentsOnDate.map((mp) => {
-          const member = members.find((m) => m.id === mp.memberId);
-          return (
-            <Card key={mp.id}>
-              <CardContent sx={{ py: 1.5 }}>
-                <Stack direction="row" sx={{ justifyContent: "space-between", alignItems: "center" }}>
-                  <Box>
-                    <Typography variant="body2">
-                      {member?.vehicleNumber ?? "—"} · {mp.type === "signup" ? "New signup" : "Renewal"}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      {mp.paymentMode.toUpperCase()}
-                    </Typography>
-                  </Box>
-                  <Typography variant="subtitle1">₹{mp.amount}</Typography>
-                </Stack>
-              </CardContent>
-            </Card>
-          );
-        })}
-      </Stack>
-
-      <Divider sx={{ mb: 2 }} />
-
-      <Typography variant="subtitle1" sx={{ mb: 1 }}>
-        Expenses This Day
-      </Typography>
-      <Stack spacing={1}>
-        {expensesOnDate.length === 0 && (
-          <Typography variant="body2" color="text.secondary">
-            No expenses recorded on this day.
-          </Typography>
-        )}
-        {expensesOnDate.map((e) => (
-          <Card key={e.id}>
-            <CardContent sx={{ py: 1.5 }}>
-              <Stack direction="row" sx={{ justifyContent: "space-between", alignItems: "center" }}>
-                <Typography variant="body2">{e.title}</Typography>
-                <Typography variant="subtitle1">₹{e.amount}</Typography>
-              </Stack>
-            </CardContent>
-          </Card>
+      <Stack spacing={1.5}>
+        {REPORTS.map((r) => (
+          <SettingsRow
+            key={r.path}
+            icon={r.icon}
+            color={r.color}
+            title={r.title}
+            subtitle={r.subtitle}
+            onClick={() => router.push(r.path)}
+          />
         ))}
       </Stack>
     </>

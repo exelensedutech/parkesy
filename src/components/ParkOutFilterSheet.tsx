@@ -36,7 +36,9 @@ const WALKIN_COLOR = "#1565C0";
 function IconRow({ icon, color, label }: { icon: React.ReactNode; color: string; label: string }) {
   return (
     <Stack direction="row" spacing={1.25} sx={{ alignItems: "center" }}>
-      <Avatar sx={{ bgcolor: color, width: 24, height: 24 }}>{icon}</Avatar>
+      <Avatar sx={{ bgcolor: color, width: 26, height: 26, "& .MuiSvgIcon-root": { fontSize: 16 } }}>
+        {icon}
+      </Avatar>
       <Typography variant="body2">{label}</Typography>
     </Stack>
   );
@@ -79,7 +81,7 @@ export default function ParkOutFilterSheet({
       anchor="bottom"
       open={open}
       onClose={onClose}
-      slotProps={{ paper: { sx: { height: "75vh", borderTopLeftRadius: 20, borderTopRightRadius: 20 } } }}
+      slotProps={{ paper: { sx: { height: "75dvh", borderTopLeftRadius: 20, borderTopRightRadius: 20 } } }}
     >
       <Box sx={{ p: 3, pb: 4, height: "100%", display: "flex", flexDirection: "column" }}>
         <Stack direction="row" sx={{ justifyContent: "space-between", alignItems: "center", mb: 3 }}>

@@ -9,6 +9,12 @@ export const vehicleTypes: VehicleType[] = [
       { order: 1, fromHour: 0, toHour: 1, amount: 10, type: "flat" },
       { order: 2, fromHour: 1, toHour: null, amount: 5, type: "per_hour" },
     ],
+    membershipPricing: [
+      { durationMonths: 1, price: 500 },
+      { durationMonths: 3, price: 1400 },
+      { durationMonths: 6, price: 2700 },
+      { durationMonths: 12, price: 5000 },
+    ],
   },
   {
     id: "cycle",
@@ -18,6 +24,12 @@ export const vehicleTypes: VehicleType[] = [
       { order: 1, fromHour: 0, toHour: 2, amount: 5, type: "flat" },
       { order: 2, fromHour: 2, toHour: null, amount: 3, type: "per_hour" },
     ],
+    membershipPricing: [
+      { durationMonths: 1, price: 300 },
+      { durationMonths: 3, price: 850 },
+      { durationMonths: 6, price: 1600 },
+      { durationMonths: 12, price: 3000 },
+    ],
   },
   {
     id: "car",
@@ -26,6 +38,12 @@ export const vehicleTypes: VehicleType[] = [
     slabs: [
       { order: 1, fromHour: 0, toHour: 1, amount: 20, type: "flat" },
       { order: 2, fromHour: 1, toHour: null, amount: 10, type: "per_hour" },
+    ],
+    membershipPricing: [
+      { durationMonths: 1, price: 800 },
+      { durationMonths: 3, price: 2300 },
+      { durationMonths: 6, price: 4400 },
+      { durationMonths: 12, price: 8000 },
     ],
   },
 ];
@@ -94,6 +112,7 @@ export const initialSessions: ParkingSession[] = [
     paymentModeAtExit: "cash",
     totalAmount: 20,
     recordedBy: "Employee",
+    exitRecordedBy: "Owner",
     status: "completed",
   },
   {
@@ -108,6 +127,7 @@ export const initialSessions: ParkingSession[] = [
     paymentModeAtExit: "online",
     totalAmount: 8,
     recordedBy: "Owner",
+    exitRecordedBy: "Owner",
     status: "completed",
   },
   {
@@ -122,6 +142,7 @@ export const initialSessions: ParkingSession[] = [
     paymentModeAtExit: "online",
     totalAmount: 35,
     recordedBy: "Employee",
+    exitRecordedBy: "Employee",
     status: "completed",
   },
   {
@@ -136,6 +157,23 @@ export const initialSessions: ParkingSession[] = [
     paymentModeAtExit: "cash",
     totalAmount: 18,
     recordedBy: "Owner",
+    exitRecordedBy: "Employee",
+    status: "completed",
+  },
+  {
+    id: "s13",
+    tokenCode: "T-040",
+    vehicleTypeId: "car",
+    vehicleNumber: "KA04ST5566",
+    entryTime: daysAgoAt(0.5, 9),
+    exitTime: daysAgoAt(0.5, 10),
+    amountPaidAtEntry: 50,
+    paymentModeAtEntry: "cash",
+    amountPaidAtExit: -15,
+    paymentModeAtExit: "cash",
+    totalAmount: 35,
+    recordedBy: "Employee",
+    exitRecordedBy: "Employee",
     status: "completed",
   },
   // Earlier this month (not today) — gives "This Month So Far" real history
@@ -151,6 +189,7 @@ export const initialSessions: ParkingSession[] = [
     paymentModeAtExit: "cash",
     totalAmount: 30,
     recordedBy: "Employee",
+    exitRecordedBy: "Employee",
     status: "completed",
   },
   {
@@ -165,6 +204,7 @@ export const initialSessions: ParkingSession[] = [
     paymentModeAtExit: "online",
     totalAmount: 18,
     recordedBy: "Owner",
+    exitRecordedBy: "Owner",
     status: "completed",
   },
   {
@@ -179,6 +219,7 @@ export const initialSessions: ParkingSession[] = [
     paymentModeAtExit: "cash",
     totalAmount: 12,
     recordedBy: "Employee",
+    exitRecordedBy: "Owner",
     status: "completed",
   },
   {
@@ -193,6 +234,7 @@ export const initialSessions: ParkingSession[] = [
     paymentModeAtExit: "online",
     totalAmount: 8,
     recordedBy: "Employee",
+    exitRecordedBy: "Employee",
     status: "completed",
   },
   {
@@ -207,6 +249,7 @@ export const initialSessions: ParkingSession[] = [
     paymentModeAtExit: "cash",
     totalAmount: 40,
     recordedBy: "Owner",
+    exitRecordedBy: "Owner",
     status: "completed",
   },
 ];
@@ -263,7 +306,9 @@ export const initialMembers: Member[] = [
     vehicleNumber: "KA01MM1111",
     vehicleTypeId: "bike",
     customerName: "Ramesh Kumar",
-    monthlyFee: 500,
+    customerPhone: "9876500001",
+    durationMonths: 1,
+    feeAmount: 500,
     startDate: plainDaysAgo(20),
     expiryDate: plainDaysFromNow(10),
     recordedBy: "Owner",
@@ -273,7 +318,9 @@ export const initialMembers: Member[] = [
     vehicleNumber: "KA02NN2222",
     vehicleTypeId: "car",
     customerName: "Priya Shetty",
-    monthlyFee: 800,
+    customerPhone: "9876500002",
+    durationMonths: 1,
+    feeAmount: 800,
     startDate: plainDaysAgo(27),
     expiryDate: plainDaysFromNow(3),
     recordedBy: "Owner",
@@ -283,7 +330,9 @@ export const initialMembers: Member[] = [
     vehicleNumber: "KA03OO3333",
     vehicleTypeId: "bike",
     customerName: "Suresh Babu",
-    monthlyFee: 500,
+    customerPhone: "9876500003",
+    durationMonths: 1,
+    feeAmount: 500,
     startDate: plainDaysAgo(40),
     expiryDate: plainDaysAgo(10),
     recordedBy: "Employee",
@@ -291,7 +340,7 @@ export const initialMembers: Member[] = [
 ];
 
 export const initialMemberPayments: MemberPayment[] = [
-  { id: "mp1", memberId: "m1", amount: 500, paymentMode: "online", paidAt: plainDaysAgo(20), type: "signup" },
-  { id: "mp2", memberId: "m2", amount: 800, paymentMode: "cash", paidAt: plainDaysAgo(27), type: "signup" },
-  { id: "mp3", memberId: "m3", amount: 500, paymentMode: "cash", paidAt: plainDaysAgo(40), type: "signup" },
+  { id: "mp1", memberId: "m1", amount: 500, paymentMode: "online", paidAt: plainDaysAgo(20), type: "signup", recordedBy: "Owner" },
+  { id: "mp2", memberId: "m2", amount: 800, paymentMode: "cash", paidAt: plainDaysAgo(27), type: "signup", recordedBy: "Owner" },
+  { id: "mp3", memberId: "m3", amount: 500, paymentMode: "cash", paidAt: plainDaysAgo(40), type: "signup", recordedBy: "Employee" },
 ];

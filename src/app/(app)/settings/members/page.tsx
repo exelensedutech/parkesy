@@ -20,6 +20,7 @@ import { useAppStore } from "@/lib/store";
 import { Member } from "@/lib/types";
 import { daysUntil } from "@/lib/calc";
 import { VEHICLE_COLORS } from "@/lib/colors";
+import { durationLabel } from "@/lib/membership";
 
 function statusFor(member: Member) {
   const days = daysUntil(member.expiryDate);
@@ -73,7 +74,8 @@ export default function MembersPage() {
                     <Box>
                       <Typography variant="subtitle1">{member.vehicleNumber}</Typography>
                       <Typography variant="body2" color="text.secondary">
-                        {member.customerName ? `${member.customerName} · ` : ""}₹{member.monthlyFee}/mo
+                        {member.customerName ? `${member.customerName} · ` : ""}₹{member.feeAmount} /{" "}
+                        {durationLabel(member.durationMonths)}
                       </Typography>
                     </Box>
                   </Stack>

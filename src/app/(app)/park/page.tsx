@@ -13,6 +13,7 @@ import FilterListIcon from "@mui/icons-material/FilterList";
 import LoginIcon from "@mui/icons-material/Login";
 import LogoutIcon from "@mui/icons-material/Logout";
 import CardMembershipIcon from "@mui/icons-material/CardMembership";
+import { alpha } from "@mui/material/styles";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
 import Typography from "@mui/material/Typography";
@@ -65,13 +66,33 @@ export default function ParkPage() {
         fullWidth
         sx={{ mb: 2.5 }}
       >
-        <ToggleButton value="in">
+        <ToggleButton
+          value="in"
+          sx={{
+            "&.Mui-selected": {
+              bgcolor: alpha("#1565C0", 0.12),
+              color: "#1565C0",
+              borderColor: "#1565C0",
+            },
+            "&.Mui-selected:hover": { bgcolor: alpha("#1565C0", 0.18) },
+          }}
+        >
           <LoginIcon sx={{ mr: 1 }} fontSize="small" />
-          In
+          Check In
         </ToggleButton>
-        <ToggleButton value="out">
+        <ToggleButton
+          value="out"
+          sx={{
+            "&.Mui-selected": {
+              bgcolor: alpha("#AD1457", 0.12),
+              color: "#AD1457",
+              borderColor: "#AD1457",
+            },
+            "&.Mui-selected:hover": { bgcolor: alpha("#AD1457", 0.18) },
+          }}
+        >
           <LogoutIcon sx={{ mr: 1 }} fontSize="small" />
-          Out
+          Check Out
         </ToggleButton>
       </ToggleButtonGroup>
 

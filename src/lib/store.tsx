@@ -9,12 +9,43 @@ import {
   vehicleTypes as initialVehicleTypes,
 } from "./mockData";
 import { checkPassword, createDeviceAccount, getDeviceAccount, updateDevicePassword } from "./mockAuth";
-import { addOneMonth } from "./calc";
-import { Expense, Member, MemberPayment, ParkingSession, PaymentMode, Role, VehicleType } from "./types";
+import { addMonths } from "./calc";
+import { getMembershipPrice } from "./membership";
+import {
+  Address,
+  Expense,
+  IdProof,
+  Member,
+  MemberPayment,
+  ParkingSession,
+  PaymentMode,
+  RateSlab,
+  Role,
+  VehicleNumberCaptureMode,
+  VehicleType,
+} from "./types";
 
 const SESSION_STORAGE_KEY = "parkesy-session";
 const BUSINESS_NAME_STORAGE_KEY = "parkesy-business-name";
+const BUSINESS_ADDRESS_STORAGE_KEY = "parkesy-business-address";
+const BUSINESS_PHONE_STORAGE_KEY = "parkesy-business-phone";
+const VEHICLE_NUMBER_CAPTURE_MODE_KEY = "parkesy-vehicle-number-capture-mode";
+const COLLECT_AT_CHECKIN_KEY = "parkesy-collect-at-checkin";
+const LONG_STAY_THRESHOLD_KEY = "parkesy-long-stay-threshold-hours";
 const DEFAULT_BUSINESS_NAME = "Sarva Parking";
+const DEFAULT_LONG_STAY_THRESHOLD_HOURS = 24;
+
+export interface AddMemberInput {
+  vehicleNumber: string;
+  vehicleTypeId: string;
+  customerName?: string;
+  customerPhone?: string;
+  customerAddress?: Address;
+  idProof?: IdProof;
+  vehiclePhotoUrl?: string;
+  durationMonths: number;
+  paymentMode: PaymentMode;
+}
 
 interface AppState {
   authChecked: boolean;
@@ -28,22 +59,28 @@ interface AppState {
   logout: () => void;
   resetPassword: (newPassword: string) => void;
   businessName: string;
-  setBusinessName: (name: string) => void;
+  businessAddress: Address;
+  businessPhone: string;
+  setBusinessDetails: (name: string, address: Address, phone: string) => void;
+  vehicleNumberCaptureMode: VehicleNumberCaptureMode;
+  setVehicleNumberCaptureMode: (mode: VehicleNumberCaptureMode) => void;
+  collectAtCheckIn: boolean;
+  setCollectAtCheckIn: (value: boolean) => void;
+  longStayThresholdHours: number;
+  setLongStayThresholdHours: (hours: number) => void;
   vehicleTypes: VehicleType[];
-  updateVehicleTypeSlots: (vehicleTypeId: string, totalSlots: number) => void;
+  updateVehicleTypeSlotsAndSlabs: (vehicleTypeId: string, totalSlots: number, slabs: RateSlab[]) => void;
+  updateVehicleTypeMembershipPricing: (
+    vehicleTypeId: string,
+    pricing: { durationMonths: number; price: number }[]
+  ) => void;
   sessions: ParkingSession[];
   expenses: Expense[];
   members: Member[];
   memberPayments: MemberPayment[];
   findActiveMember: (vehicleNumber: string) => Member | undefined;
-  addMember: (
-    vehicleNumber: string,
-    vehicleTypeId: string,
-    customerName: string | undefined,
-    monthlyFee: number,
-    paymentMode: PaymentMode
-  ) => void;
-  renewMember: (memberId: string, paymentMode: PaymentMode) => void;
+  addMember: (input: AddMemberInput) => void;
+  renewMember: (memberId: string, durationMonths: number, paymentMode: PaymentMode) => void;
   startSession: (
     vehicleTypeId: string,
     vehicleNumber: string,
@@ -57,7 +94,15 @@ interface AppState {
     amountPaidAtExit: number,
     paymentModeAtExit?: PaymentMode
   ) => void;
+  updateSessionVehicleNumber: (sessionId: string, vehicleNumber: string) => void;
   addExpense: (amount: number, title: string, note: string | undefined, expenseDate: string) => void;
+  updateExpense: (
+    id: string,
+    amount: number,
+    title: string,
+    note: string | undefined,
+    expenseDate: string
+  ) => void;
 }
 
 const AppContext = createContext<AppState | null>(null);
@@ -73,8 +118,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [phone, setPhone] = useState("");
 
   // Starts at the default (not "") so server and first client paint match;
-  // the real saved name (if any) is only read from localStorage after mount.
+  // the real saved values (if any) are only read from localStorage after mount.
   const [businessName, setBusinessNameState] = useState(DEFAULT_BUSINESS_NAME);
+  const [businessAddress, setBusinessAddressState] = useState<Address>({});
+  const [businessPhone, setBusinessPhoneState] = useState("");
+  const [vehicleNumberCaptureMode, setVehicleNumberCaptureModeState] = useState<VehicleNumberCaptureMode>("full");
+  const [collectAtCheckIn, setCollectAtCheckInState] = useState(true);
+  const [longStayThresholdHours, setLongStayThresholdHoursState] = useState(DEFAULT_LONG_STAY_THRESHOLD_HOURS);
   const [vehicleTypes, setVehicleTypes] = useState<VehicleType[]>(initialVehicleTypes);
 
   const [sessions, setSessions] = useState<ParkingSession[]>([]);
@@ -90,6 +140,25 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
     const savedName = window.localStorage.getItem(BUSINESS_NAME_STORAGE_KEY);
     if (savedName) setBusinessNameState(savedName);
+    const savedAddress = window.localStorage.getItem(BUSINESS_ADDRESS_STORAGE_KEY);
+    if (savedAddress) {
+      try {
+        setBusinessAddressState(JSON.parse(savedAddress));
+      } catch {
+        // ignore malformed legacy value
+      }
+    }
+    const savedPhone = window.localStorage.getItem(BUSINESS_PHONE_STORAGE_KEY);
+    if (savedPhone) setBusinessPhoneState(savedPhone);
+    const savedCaptureMode = window.localStorage.getItem(VEHICLE_NUMBER_CAPTURE_MODE_KEY);
+    if (savedCaptureMode === "full" || savedCaptureMode === "last4") setVehicleNumberCaptureModeState(savedCaptureMode);
+    const savedCollectAtCheckIn = window.localStorage.getItem(COLLECT_AT_CHECKIN_KEY);
+    if (savedCollectAtCheckIn !== null) setCollectAtCheckInState(savedCollectAtCheckIn === "1");
+    const savedThreshold = window.localStorage.getItem(LONG_STAY_THRESHOLD_KEY);
+    if (savedThreshold) {
+      const parsed = parseFloat(savedThreshold);
+      if (!Number.isNaN(parsed) && parsed > 0) setLongStayThresholdHoursState(parsed);
+    }
 
     const account = getDeviceAccount();
     if (account) {
@@ -140,15 +209,41 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         updateDevicePassword(newPassword);
       },
       businessName,
-      setBusinessName: (name) => {
-        const trimmed = name.trim() || DEFAULT_BUSINESS_NAME;
-        window.localStorage.setItem(BUSINESS_NAME_STORAGE_KEY, trimmed);
-        setBusinessNameState(trimmed);
+      businessAddress,
+      businessPhone,
+      setBusinessDetails: (name, address, phone_) => {
+        const trimmedName = name.trim() || DEFAULT_BUSINESS_NAME;
+        window.localStorage.setItem(BUSINESS_NAME_STORAGE_KEY, trimmedName);
+        window.localStorage.setItem(BUSINESS_ADDRESS_STORAGE_KEY, JSON.stringify(address));
+        window.localStorage.setItem(BUSINESS_PHONE_STORAGE_KEY, phone_.trim());
+        setBusinessNameState(trimmedName);
+        setBusinessAddressState(address);
+        setBusinessPhoneState(phone_.trim());
+      },
+      vehicleNumberCaptureMode,
+      setVehicleNumberCaptureMode: (mode) => {
+        window.localStorage.setItem(VEHICLE_NUMBER_CAPTURE_MODE_KEY, mode);
+        setVehicleNumberCaptureModeState(mode);
+      },
+      collectAtCheckIn,
+      setCollectAtCheckIn: (value) => {
+        window.localStorage.setItem(COLLECT_AT_CHECKIN_KEY, value ? "1" : "0");
+        setCollectAtCheckInState(value);
+      },
+      longStayThresholdHours,
+      setLongStayThresholdHours: (hours) => {
+        window.localStorage.setItem(LONG_STAY_THRESHOLD_KEY, String(hours));
+        setLongStayThresholdHoursState(hours);
       },
       vehicleTypes,
-      updateVehicleTypeSlots: (vehicleTypeId, totalSlots) => {
+      updateVehicleTypeSlotsAndSlabs: (vehicleTypeId, totalSlots, slabs) => {
         setVehicleTypes((prev) =>
-          prev.map((vt) => (vt.id === vehicleTypeId ? { ...vt, totalSlots } : vt))
+          prev.map((vt) => (vt.id === vehicleTypeId ? { ...vt, totalSlots, slabs } : vt))
+        );
+      },
+      updateVehicleTypeMembershipPricing: (vehicleTypeId, pricing) => {
+        setVehicleTypes((prev) =>
+          prev.map((vt) => (vt.id === vehicleTypeId ? { ...vt, membershipPricing: pricing } : vt))
         );
       },
       sessions,
@@ -156,39 +251,59 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       members,
       memberPayments,
       findActiveMember,
-      addMember: (vehicleNumber, vehicleTypeId, customerName, monthlyFee, paymentMode) => {
+      addMember: (input) => {
+        const vehicleType = vehicleTypes.find((vt) => vt.id === input.vehicleTypeId);
+        const feeAmount = vehicleType ? getMembershipPrice(vehicleType, input.durationMonths) : 0;
         const startDate = new Date().toISOString();
         const newMember: Member = {
           id: `m${Date.now()}`,
-          vehicleNumber: vehicleNumber.trim().toUpperCase(),
-          vehicleTypeId,
-          customerName,
-          monthlyFee,
+          vehicleNumber: input.vehicleNumber.trim().toUpperCase(),
+          vehicleTypeId: input.vehicleTypeId,
+          customerName: input.customerName,
+          customerPhone: input.customerPhone,
+          customerAddress: input.customerAddress,
+          idProof: input.idProof,
+          vehiclePhotoUrl: input.vehiclePhotoUrl,
+          durationMonths: input.durationMonths,
+          feeAmount,
           startDate,
-          expiryDate: addOneMonth(startDate),
+          expiryDate: addMonths(startDate, input.durationMonths),
           recordedBy: userName,
         };
         setMembers((prev) => [newMember, ...prev]);
         setMemberPayments((prev) => [
-          { id: `mp${Date.now()}`, memberId: newMember.id, amount: monthlyFee, paymentMode, paidAt: startDate, type: "signup" },
+          {
+            id: `mp${Date.now()}`,
+            memberId: newMember.id,
+            amount: feeAmount,
+            paymentMode: input.paymentMode,
+            paidAt: startDate,
+            type: "signup",
+            recordedBy: userName,
+          },
           ...prev,
         ]);
       },
-      renewMember: (memberId, paymentMode) => {
+      renewMember: (memberId, durationMonths, paymentMode) => {
         const member = members.find((m) => m.id === memberId);
         if (!member) return;
+        const vehicleType = vehicleTypes.find((vt) => vt.id === member.vehicleTypeId);
+        const feeAmount = vehicleType ? getMembershipPrice(vehicleType, durationMonths) : 0;
         const now = Date.now();
         const base = new Date(Math.max(new Date(member.expiryDate).getTime(), now)).toISOString();
-        const newExpiry = addOneMonth(base);
-        setMembers((prev) => prev.map((m) => (m.id === memberId ? { ...m, expiryDate: newExpiry } : m)));
+        const newExpiry = addMonths(base, durationMonths);
+        setMembers((prev) =>
+          prev.map((m) => (m.id === memberId ? { ...m, expiryDate: newExpiry, durationMonths, feeAmount } : m))
+        );
         setMemberPayments((prev) => [
           {
             id: `mp${Date.now()}`,
             memberId,
-            amount: member.monthlyFee,
+            amount: feeAmount,
             paymentMode,
             paidAt: new Date().toISOString(),
             type: "renewal",
+            recordedBy: userName,
           },
           ...prev,
         ]);
@@ -223,10 +338,16 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
                   exitTime: new Date().toISOString(),
                   totalAmount,
                   amountPaidAtExit,
-                  paymentModeAtExit: amountPaidAtExit > 0 ? paymentModeAtExit : undefined,
+                  paymentModeAtExit: amountPaidAtExit !== 0 ? paymentModeAtExit : undefined,
+                  exitRecordedBy: userName,
                 }
               : s
           )
+        );
+      },
+      updateSessionVehicleNumber: (sessionId, vehicleNumber) => {
+        setSessions((prev) =>
+          prev.map((s) => (s.id === sessionId ? { ...s, vehicleNumber: vehicleNumber.trim().toUpperCase() } : s))
         );
       },
       addExpense: (amount, title, note, expenseDate) => {
@@ -240,6 +361,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         };
         setExpenses((prev) => [newExpense, ...prev]);
       },
+      updateExpense: (id, amount, title, note, expenseDate) => {
+        setExpenses((prev) =>
+          prev.map((e) => (e.id === id ? { ...e, amount, title, note, expenseDate } : e))
+        );
+      },
     }),
     [
       authChecked,
@@ -249,6 +375,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       userName,
       phone,
       businessName,
+      businessAddress,
+      businessPhone,
+      vehicleNumberCaptureMode,
+      collectAtCheckIn,
+      longStayThresholdHours,
       vehicleTypes,
       sessions,
       expenses,

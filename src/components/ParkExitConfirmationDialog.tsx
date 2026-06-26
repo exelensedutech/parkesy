@@ -16,6 +16,7 @@ export interface ParkExitConfirmation {
   totalAmount: number;
   duration: string;
   isMember: boolean;
+  refundAmount?: number;
 }
 
 export default function ParkExitConfirmationDialog({
@@ -47,7 +48,11 @@ export default function ParkExitConfirmationDialog({
               Parked for {confirmation.duration}
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              {confirmation.isMember ? "Member — no charge" : `₹${confirmation.totalAmount} total collected`}
+              {confirmation.isMember
+                ? "Member — no charge"
+                : confirmation.refundAmount
+                  ? `₹${confirmation.refundAmount} refunded to customer`
+                  : `₹${confirmation.totalAmount} total collected`}
             </Typography>
           </Stack>
         )}
