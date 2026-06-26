@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { supabase } from "./supabaseClient";
-import { compressImage } from "./imageCompress";
+import { compressImage, randomId } from "./imageCompress";
 import {
   Address,
   Expense,
@@ -629,7 +629,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       uploadPhoto: async (file) => {
         if (!businessId) throw new Error("No business context");
         const compressed = await compressImage(file);
-        const path = `${businessId}/${crypto.randomUUID()}.jpg`;
+        const path = `${businessId}/${randomId()}.jpg`;
         const { error } = await supabase.storage.from("photos").upload(path, compressed, { contentType: "image/jpeg" });
         if (error) throw error;
         return path;
