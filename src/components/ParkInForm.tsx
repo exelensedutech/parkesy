@@ -16,6 +16,7 @@ import Alert from "@mui/material/Alert";
 import Dialog from "@mui/material/Dialog";
 import DialogContent from "@mui/material/DialogContent";
 import DialogActions from "@mui/material/DialogActions";
+import Drawer from "@mui/material/Drawer";
 import List from "@mui/material/List";
 import ListItemButton from "@mui/material/ListItemButton";
 import ListItemText from "@mui/material/ListItemText";
@@ -27,10 +28,12 @@ import CreditCardIcon from "@mui/icons-material/CreditCard";
 import CardMembershipIcon from "@mui/icons-material/CardMembership";
 import { alpha } from "@mui/material/styles";
 import VehicleIcon from "./VehicleIcon";
+import SheetHandle from "./SheetHandle";
 import ParkConfirmationDialog, { ParkConfirmation } from "./ParkConfirmationDialog";
 import { useAppStore } from "@/lib/store";
 import { PaymentMode } from "@/lib/types";
 import { VEHICLE_COLORS, CASH_COLOR, ONLINE_COLOR } from "@/lib/colors";
+import { BOTTOM_SHEET_PAPER_SX } from "@/lib/sheetStyles";
 
 export default function ParkInForm() {
   const { vehicleTypes, startSession, findMatchingMembers, uploadPhoto, vehicleNumberCaptureMode, collectAtCheckIn } =
@@ -358,8 +361,17 @@ export default function ParkInForm() {
 
       <ParkConfirmationDialog confirmation={confirmation} onClose={() => setConfirmation(null)} />
 
-      <Dialog open={memberPickerOpen} onClose={() => setMemberPickerOpen(false)} maxWidth="xs" fullWidth>
-        <DialogContent sx={{ p: 0 }}>
+      <Drawer
+        anchor="bottom"
+        open={memberPickerOpen}
+        onClose={() => setMemberPickerOpen(false)}
+        slotProps={{ paper: { sx: BOTTOM_SHEET_PAPER_SX } }}
+      >
+        <Box sx={{ pt: 1.5, pb: 1 }}>
+          <SheetHandle />
+          <Typography variant="h6" sx={{ px: 3, mb: 1.5 }}>
+            Which vehicle is this?
+          </Typography>
           <List sx={{ py: 0 }}>
             {matchingMembers.map((m) => (
               <ListItemButton
@@ -385,8 +397,8 @@ export default function ParkInForm() {
           >
             <ListItemText primary="None of these" secondary="Charge as a regular entry" />
           </ListItemButton>
-        </DialogContent>
-      </Dialog>
+        </Box>
+      </Drawer>
 
       <Dialog open={previewOpen} onClose={() => setPreviewOpen(false)} maxWidth="xs" fullWidth>
         <DialogContent sx={{ p: 0 }}>

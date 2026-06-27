@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Drawer from "@mui/material/Drawer";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
@@ -16,6 +16,10 @@ import { BOTTOM_SHEET_PAPER_SX } from "@/lib/sheetStyles";
 export default function EditVehicleNumberCaptureSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { vehicleNumberCaptureMode, setVehicleNumberCaptureMode } = useAppStore();
   const [mode, setMode] = useState<VehicleNumberCaptureMode>(vehicleNumberCaptureMode);
+
+  useEffect(() => {
+    if (open) setMode(vehicleNumberCaptureMode);
+  }, [open, vehicleNumberCaptureMode]);
 
   const handleSave = () => {
     setVehicleNumberCaptureMode(mode);
