@@ -2,252 +2,197 @@
 
 import { useState } from "react";
 import Box from "@mui/material/Box";
+import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
+import ToggleButton from "@mui/material/ToggleButton";
+import TextField from "@mui/material/TextField";
+import InputAdornment from "@mui/material/InputAdornment";
+import IconButton from "@mui/material/IconButton";
+import Badge from "@mui/material/Badge";
+import SearchIcon from "@mui/icons-material/Search";
+import FilterListIcon from "@mui/icons-material/FilterList";
+import LoginIcon from "@mui/icons-material/Login";
+import LogoutIcon from "@mui/icons-material/Logout";
+import CardMembershipIcon from "@mui/icons-material/CardMembership";
+import { alpha } from "@mui/material/styles";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
 import Typography from "@mui/material/Typography";
-import Grid from "@mui/material/Grid";
 import Stack from "@mui/material/Stack";
 import Avatar from "@mui/material/Avatar";
-import Divider from "@mui/material/Divider";
-import CircularProgress from "@mui/material/CircularProgress";
-import { alpha } from "@mui/material/styles";
-import LocalParkingIcon from "@mui/icons-material/LocalParking";
-import LoginIcon from "@mui/icons-material/Login";
-import LogoutIcon from "@mui/icons-material/Logout";
-import PaymentsIcon from "@mui/icons-material/Payments";
-import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
-import LocalAtmIcon from "@mui/icons-material/LocalAtm";
-import CreditCardIcon from "@mui/icons-material/CreditCard";
+import Chip from "@mui/material/Chip";
+import ParkInForm from "@/components/ParkInForm";
+import ParkOutSheet from "@/components/ParkOutSheet";
+import ParkOutFilterSheet, { DurationFilter, MemberFilter } from "@/components/ParkOutFilterSheet";
+import ParkExitConfirmationDialog, { ParkExitConfirmation } from "@/components/ParkExitConfirmationDialog";
 import VehicleIcon from "@/components/VehicleIcon";
-import PeriodSelect from "@/components/PeriodSelect";
 import { useAppStore } from "@/lib/store";
-import { isWithinRange } from "@/lib/calc";
+import { ParkingSession } from "@/lib/types";
+import { durationHours, formatDuration } from "@/lib/calc";
 import { VEHICLE_COLORS } from "@/lib/colors";
-import { DashboardPeriod, PERIOD_LABELS, getPeriodRange } from "@/lib/dashboardPeriod";
 
-const GREEN = "#2E7D32";
-const ORANGE = "#E65100";
+export default function ParkPage() {
+  const { sessions, vehicleTypes } = useAppStore();
+  const [tab, setTab] = useState<"in" | "out">("in");
+  const [search, setSearch] = useState("");
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [typeFilter, setTypeFilter] = useState("all");
+  const [durationFilter, setDurationFilter] = useState<DurationFilter>("any");
+  const [memberFilter, setMemberFilter] = useState<MemberFilter>("all");
+  const [outSession, setOutSession] = useState<ParkingSession | null>(null);
+  const [exitConfirmation, setExitConfirmation] = useState<ParkExitConfirmation | null>(null);
 
-export default function HomePage() {
-  const { sessions, expenses, vehicleTypes, memberPayments } = useAppStore();
-  const [period, setPeriod] = useState<DashboardPeriod>("today");
-  const { start, end } = getPeriodRange(period);
+  const filtersActive = typeFilter !== "all" || durationFilter !== "any" || memberFilter !== "all";
 
-  const currentlyParked = sessions.filter((s) => s.status === "parked").length;
-  const entered = sessions.filter((s) => isWithinRange(s.entryTime, start, end)).length;
-  const exited = sessions.filter(
-    (s) => s.status === "completed" && s.exitTime && isWithinRange(s.exitTime, start, end)
-  ).length;
+  const resetFilters = () => {
+    setTypeFilter("all");
+    setDurationFilter("any");
+    setMemberFilter("all");
+  };
 
-  const entryCollected = sessions
-    .filter((s) => isWithinRange(s.entryTime, start, end))
-    .reduce((sum, s) => sum + s.amountPaidAtEntry, 0);
-  const exitCollected = sessions
-    .filter((s) => s.status === "completed" && s.exitTime && isWithinRange(s.exitTime, start, end))
-    .reduce((sum, s) => sum + (s.amountPaidAtExit ?? 0), 0);
-  const memberRevenue = memberPayments
-    .filter((mp) => isWithinRange(mp.paidAt, start, end))
-    .reduce((sum, mp) => sum + mp.amount, 0);
-  const collected = entryCollected + exitCollected + memberRevenue;
-
-  const cash =
-    sessions
-      .filter((s) => isWithinRange(s.entryTime, start, end) && s.paymentModeAtEntry === "cash")
-      .reduce((sum, s) => sum + s.amountPaidAtEntry, 0) +
-    sessions
-      .filter(
-        (s) =>
-          s.status === "completed" &&
-          s.exitTime &&
-          isWithinRange(s.exitTime, start, end) &&
-          s.paymentModeAtExit === "cash"
-      )
-      .reduce((sum, s) => sum + (s.amountPaidAtExit ?? 0), 0) +
-    memberPayments
-      .filter((mp) => isWithinRange(mp.paidAt, start, end) && mp.paymentMode === "cash")
-      .reduce((sum, mp) => sum + mp.amount, 0);
-  const online = collected - cash;
-
-  const expensesInRange = expenses
-    .filter((e) => isWithinRange(e.expenseDate, start, end))
-    .reduce((sum, e) => sum + e.amount, 0);
-
-  const net = collected - expensesInRange;
-  const netColor = net >= 0 ? GREEN : "#C62828";
-  const hasMoneyData = collected + expensesInRange > 0;
-  const sharePct = hasMoneyData ? (collected / (collected + expensesInRange)) * 100 : 0;
-
-  const trafficMetrics = [
-    { label: "Entered", value: entered, icon: <LoginIcon />, color: "#1565C0" },
-    { label: "Exited", value: exited, icon: <LogoutIcon />, color: "#AD1457" },
-    { label: "Currently Parked", value: currentlyParked, icon: <LocalParkingIcon />, color: "#37474F" },
-  ];
-
-  const metrics = [
-    { label: "Collected", value: `₹${collected}`, icon: <PaymentsIcon />, color: GREEN },
-    { label: "Expenses", value: `₹${expensesInRange}`, icon: <ReceiptLongIcon />, color: ORANGE },
-    { label: "Cash", value: `₹${cash}`, icon: <LocalAtmIcon />, color: "#00838F" },
-    { label: "Online", value: `₹${online}`, icon: <CreditCardIcon />, color: "#5E35B1" },
-  ];
+  const parked = sessions
+    .filter((s) => s.status === "parked")
+    .filter((s) => s.vehicleNumber.toLowerCase().includes(search.trim().toLowerCase()))
+    .filter((s) => typeFilter === "all" || s.vehicleTypeId === typeFilter)
+    .filter((s) => durationFilter === "any" || durationHours(s.entryTime) >= durationFilter)
+    .filter((s) => memberFilter === "all" || (memberFilter === "member" ? Boolean(s.memberId) : !s.memberId))
+    .sort((a, b) => durationHours(b.entryTime) - durationHours(a.entryTime));
 
   return (
     <>
-      <PeriodSelect value={period} onChange={setPeriod} />
+      <ToggleButtonGroup
+        value={tab}
+        exclusive
+        onChange={(_, value) => value && setTab(value)}
+        fullWidth
+        sx={{ mb: 2.5 }}
+      >
+        <ToggleButton
+          value="in"
+          sx={{
+            "&.Mui-selected": {
+              bgcolor: alpha("#1565C0", 0.12),
+              color: "#1565C0",
+              borderColor: "#1565C0",
+            },
+            "&.Mui-selected:hover": { bgcolor: alpha("#1565C0", 0.18) },
+          }}
+        >
+          <LoginIcon sx={{ mr: 1 }} fontSize="small" />
+          Check In
+        </ToggleButton>
+        <ToggleButton
+          value="out"
+          sx={{
+            "&.Mui-selected": {
+              bgcolor: alpha("#AD1457", 0.12),
+              color: "#AD1457",
+              borderColor: "#AD1457",
+            },
+            "&.Mui-selected:hover": { bgcolor: alpha("#AD1457", 0.18) },
+          }}
+        >
+          <LogoutIcon sx={{ mr: 1 }} fontSize="small" />
+          Check Out
+        </ToggleButton>
+      </ToggleButtonGroup>
 
-      <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
-        Traffic
-      </Typography>
-      <Grid container spacing={1.5} sx={{ mb: 2.5 }}>
-        {trafficMetrics.map((m) => (
-          <Grid size={4} key={m.label}>
-            <Card sx={{ height: "100%" }}>
-              <CardContent sx={{ textAlign: "center", px: 1 }}>
-                <Avatar sx={{ bgcolor: m.color, width: 32, height: 32, mb: 1, mx: "auto" }}>{m.icon}</Avatar>
-                <Typography variant="h5" sx={{ fontWeight: 700 }}>
-                  {m.value}
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  {m.label}
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-        ))}
-      </Grid>
+      {tab === "in" && <ParkInForm />}
 
-      <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
-        Collections
-      </Typography>
-      <Grid container spacing={1.5} sx={{ mb: 2 }}>
-        {metrics.map((m) => (
-          <Grid size={6} key={m.label}>
-            <Card sx={{ height: "100%" }}>
-              <CardContent>
-                <Avatar sx={{ bgcolor: m.color, width: 36, height: 36, mb: 1 }}>{m.icon}</Avatar>
-                <Typography variant="caption" color="text.secondary">
-                  {m.label}
-                </Typography>
-                <Typography variant="h5" sx={{ fontWeight: 700 }}>
-                  {m.value}
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-        ))}
-      </Grid>
+      {tab === "out" && (
+        <Box>
+          <TextField
+            placeholder="Search by vehicle number"
+            fullWidth
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            slotProps={{
+              input: {
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon />
+                  </InputAdornment>
+                ),
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton onClick={() => setFilterOpen(true)} edge="end" aria-label="Filters">
+                      <Badge color="primary" variant="dot" invisible={!filtersActive}>
+                        <FilterListIcon />
+                      </Badge>
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              },
+            }}
+            sx={{ mb: 2 }}
+          />
 
-      <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
-        Profit &amp; Loss
-      </Typography>
-      <Card sx={{ mb: 2.5 }}>
-        <CardContent>
-          <Typography variant="overline" sx={{ fontWeight: 700, color: "text.secondary", letterSpacing: 1 }}>
-            {PERIOD_LABELS[period]}
-          </Typography>
-          <Grid container spacing={1.5} sx={{ mb: 2, mt: 0.5 }}>
-            <Grid size={4}>
-              <Typography variant="caption" color="text.secondary">
-                Collected
+          <Stack spacing={1.5}>
+            {parked.length === 0 && (
+              <Typography variant="body2" color="text.secondary">
+                No parked vehicles match your search/filters.
               </Typography>
-              <Typography variant="h6" sx={{ fontWeight: 700, color: GREEN }}>
-                ₹{collected}
-              </Typography>
-            </Grid>
-            <Grid size={4}>
-              <Typography variant="caption" color="text.secondary">
-                Expenses
-              </Typography>
-              <Typography variant="h6" sx={{ fontWeight: 700, color: ORANGE }}>
-                ₹{expensesInRange}
-              </Typography>
-            </Grid>
-            <Grid size={4}>
-              <Typography variant="caption" color="text.secondary">
-                Net
-              </Typography>
-              <Typography variant="h6" sx={{ fontWeight: 700, color: netColor }}>
-                ₹{net}
-              </Typography>
-            </Grid>
-          </Grid>
-
-          <Box sx={{ display: "flex", height: 10, borderRadius: 5, overflow: "hidden", bgcolor: "grey.100", mb: 1 }}>
-            {hasMoneyData && (
-              <>
-                <Box sx={{ width: `${sharePct}%`, bgcolor: GREEN }} />
-                <Box sx={{ width: `${100 - sharePct}%`, bgcolor: ORANGE }} />
-              </>
             )}
-          </Box>
-          <Stack direction="row" spacing={2.5}>
-            <Stack direction="row" spacing={0.75} sx={{ alignItems: "center" }}>
-              <Box sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: GREEN }} />
-              <Typography variant="caption" color="text.secondary">
-                Collected
-              </Typography>
-            </Stack>
-            <Stack direction="row" spacing={0.75} sx={{ alignItems: "center" }}>
-              <Box sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: ORANGE }} />
-              <Typography variant="caption" color="text.secondary">
-                Expenses
-              </Typography>
-            </Stack>
-          </Stack>
-        </CardContent>
-      </Card>
-
-      <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
-        Capacity
-      </Typography>
-      <Card>
-        <CardContent>
-          <Stack direction="row" sx={{ justifyContent: "space-around" }}>
-            {vehicleTypes.map((vt) => {
-              const parkedCount = sessions.filter((s) => s.status === "parked" && s.vehicleTypeId === vt.id).length;
-              const pct = vt.totalSlots > 0 ? Math.min((parkedCount / vt.totalSlots) * 100, 100) : 0;
-              const ringColor = pct >= 90 ? "#C62828" : pct >= 70 ? ORANGE : VEHICLE_COLORS[vt.name];
+            {parked.map((session) => {
+              const vehicleType = vehicleTypes.find((vt) => vt.id === session.vehicleTypeId)!;
+              const color = VEHICLE_COLORS[vehicleType.name];
+              const parkedAt = new Date(session.entryTime).toLocaleString("en-IN", {
+                day: "numeric",
+                month: "short",
+                hour: "numeric",
+                minute: "2-digit",
+                timeZone: "Asia/Kolkata",
+              });
               return (
-                <Stack key={vt.id} spacing={1} sx={{ alignItems: "center" }}>
-                  <Box sx={{ position: "relative", display: "inline-flex" }}>
-                    <CircularProgress
-                      variant="determinate"
-                      value={100}
-                      size={64}
-                      thickness={4}
-                      sx={{ color: alpha(ringColor, 0.15), position: "absolute" }}
-                    />
-                    <CircularProgress
-                      variant="determinate"
-                      value={pct}
-                      size={64}
-                      thickness={4}
-                      sx={{ color: ringColor }}
-                    />
-                    <Box
-                      sx={{
-                        position: "absolute",
-                        inset: 0,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        color: ringColor,
-                      }}
-                    >
-                      <VehicleIcon name={vt.name} />
-                    </Box>
-                  </Box>
-                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                    {vt.name}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    {parkedCount}/{vt.totalSlots}
-                  </Typography>
-                </Stack>
+                <Card key={session.id} onClick={() => setOutSession(session)} sx={{ cursor: "pointer" }}>
+                  <CardContent>
+                    <Stack direction="row" sx={{ justifyContent: "space-between", alignItems: "center" }}>
+                      <Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}>
+                        <Avatar sx={{ bgcolor: color, width: 36, height: 36 }}>
+                          <VehicleIcon name={vehicleType.name} />
+                        </Avatar>
+                        <Box>
+                          <Typography variant="subtitle1">{vehicleType.name}</Typography>
+                          <Typography variant="body2" color="text.secondary">
+                            Parked {parkedAt}
+                            {session.vehicleNumber ? ` · ${session.vehicleNumber}` : ""}
+                          </Typography>
+                        </Box>
+                      </Stack>
+                      <Stack direction="row" spacing={0.75} sx={{ alignItems: "center" }}>
+                        {session.memberId && (
+                          <CardMembershipIcon fontSize="small" color="success" />
+                        )}
+                        <Chip label={formatDuration(durationHours(session.entryTime))} size="small" />
+                      </Stack>
+                    </Stack>
+                  </CardContent>
+                </Card>
               );
             })}
           </Stack>
-        </CardContent>
-      </Card>
+        </Box>
+      )}
+
+      <ParkOutSheet
+        session={outSession}
+        onClose={() => setOutSession(null)}
+        onCompleted={setExitConfirmation}
+      />
+
+      <ParkExitConfirmationDialog confirmation={exitConfirmation} onClose={() => setExitConfirmation(null)} />
+
+      <ParkOutFilterSheet
+        open={filterOpen}
+        onClose={() => setFilterOpen(false)}
+        vehicleTypes={vehicleTypes}
+        typeFilter={typeFilter}
+        setTypeFilter={setTypeFilter}
+        durationFilter={durationFilter}
+        setDurationFilter={setDurationFilter}
+        memberFilter={memberFilter}
+        setMemberFilter={setMemberFilter}
+        onReset={resetFilters}
+      />
     </>
   );
 }

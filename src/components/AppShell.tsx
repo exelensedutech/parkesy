@@ -21,8 +21,8 @@ import UserProfileSheet from "./UserProfileSheet";
 import { useAppStore } from "@/lib/store";
 
 const employeeTabs = [
-  { label: "Home", href: "/", icon: <HomeIcon /> },
-  { label: "Park", href: "/park", icon: <LocalParkingIcon /> },
+  { label: "Home", href: "/dashboard", icon: <HomeIcon /> },
+  { label: "Park", href: "/", icon: <LocalParkingIcon /> },
   { label: "Expense", href: "/expenses", icon: <ReceiptLongIcon /> },
 ];
 
@@ -35,7 +35,17 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const [profileOpen, setProfileOpen] = useState(false);
 
   const tabs = role === "admin" ? adminTabs : employeeTabs;
-  const activeIndex = Math.max(tabs.findIndex((t) => t.href === pathname), 0);
+  // Match the most specific tab whose href prefixes the current path, so a
+  // sub-route like /settings/members still highlights the Settings tab
+  // instead of falling back to the first tab.
+  const activeIndex = (() => {
+    let best = -1;
+    tabs.forEach((tab, idx) => {
+      const matches = tab.href === "/" ? pathname === "/" : pathname.startsWith(tab.href);
+      if (matches && (best === -1 || tab.href.length > tabs[best].href.length)) best = idx;
+    });
+    return Math.max(best, 0);
+  })();
 
   return (
     <Box sx={{ minHeight: "100vh", display: "flex", flexDirection: "column", bgcolor: "background.default" }}>

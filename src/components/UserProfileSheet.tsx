@@ -10,8 +10,9 @@ import Grid from "@mui/material/Grid";
 import Divider from "@mui/material/Divider";
 import Avatar from "@mui/material/Avatar";
 import Stack from "@mui/material/Stack";
-import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
-import ToggleButton from "@mui/material/ToggleButton";
+import Select, { SelectChangeEvent } from "@mui/material/Select";
+import MenuItem from "@mui/material/MenuItem";
+import FormControl from "@mui/material/FormControl";
 import LogoutIcon from "@mui/icons-material/Logout";
 import SheetHandle from "./SheetHandle";
 import { useAppStore } from "@/lib/store";
@@ -54,20 +55,6 @@ export default function UserProfileSheet({ open, onClose }: { open: boolean; onC
           </Box>
         </Stack>
 
-        <Typography variant="caption" color="text.secondary">
-          Language
-        </Typography>
-        <ToggleButtonGroup
-          value={language}
-          exclusive
-          fullWidth
-          onChange={(_, value: Language | null) => value && setLanguage(value)}
-          sx={{ mt: 0.5, mb: 2.5 }}
-        >
-          <ToggleButton value="en">English</ToggleButton>
-          <ToggleButton value="ta">தமிழ்</ToggleButton>
-        </ToggleButtonGroup>
-
         <TextField label="Name" fullWidth value={name} onChange={(e) => setName(e.target.value)} sx={{ mb: 2 }} />
 
         <Divider sx={{ mb: 2 }} />
@@ -109,6 +96,20 @@ export default function UserProfileSheet({ open, onClose }: { open: boolean; onC
           onChange={(e) => setAddress((prev) => ({ ...prev, state: e.target.value }))}
           sx={{ mb: 3 }}
         />
+
+        <Divider sx={{ mb: 2 }} />
+        <Typography variant="caption" color="text.secondary">
+          Language
+        </Typography>
+        <FormControl fullWidth sx={{ mt: 0.5, mb: 3 }}>
+          <Select
+            value={language}
+            onChange={(e: SelectChangeEvent) => setLanguage(e.target.value as Language)}
+          >
+            <MenuItem value="en">English</MenuItem>
+            <MenuItem value="ta">தமிழ்</MenuItem>
+          </Select>
+        </FormControl>
 
         <Button variant="contained" size="large" fullWidth onClick={handleSave} sx={{ mb: 1.5 }}>
           Save
