@@ -32,12 +32,24 @@ import SheetHandle from "./SheetHandle";
 import ParkConfirmationDialog, { ParkConfirmation } from "./ParkConfirmationDialog";
 import { useAppStore } from "@/lib/store";
 import { PaymentMode } from "@/lib/types";
+import { TranslationKey } from "@/lib/i18n";
 import { VEHICLE_COLORS, CASH_COLOR, ONLINE_COLOR } from "@/lib/colors";
 import { BOTTOM_SHEET_PAPER_SX } from "@/lib/sheetStyles";
 
+function vehicleTypeKey(name: string): TranslationKey {
+  return name === "Bike" ? "vehicleTypeBike" : name === "Cycle" ? "vehicleTypeCycle" : "vehicleTypeCar";
+}
+
 export default function ParkInForm() {
-  const { vehicleTypes, startSession, findMatchingMembers, uploadPhoto, vehicleNumberCaptureMode, collectAtCheckIn } =
-    useAppStore();
+  const {
+    vehicleTypes,
+    startSession,
+    findMatchingMembers,
+    uploadPhoto,
+    vehicleNumberCaptureMode,
+    collectAtCheckIn,
+    t,
+  } = useAppStore();
   const isLast4Mode = vehicleNumberCaptureMode === "last4";
   const [vehicleTypeId, setVehicleTypeId] = useState(vehicleTypes[0].id);
   const [vehicleNumber, setVehicleNumber] = useState("");
@@ -100,7 +112,7 @@ export default function ParkInForm() {
 
   const handlePark = async () => {
     if (!isCycle && !vehicleNumber.trim()) {
-      setNumberError("Vehicle number is required");
+      setNumberError(t("vehicleNumberRequired"));
       return;
     }
     if (parking) return;
@@ -131,7 +143,7 @@ export default function ParkInForm() {
       setPhotoUrl(undefined);
       setPhotoFile(undefined);
     } catch {
-      setNumberError("Could not park the vehicle — please try again");
+      setNumberError(t("couldNotPark"));
     } finally {
       setParking(false);
     }
@@ -140,12 +152,12 @@ export default function ParkInForm() {
   return (
     <Box>
       <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
-        Vehicle Details
+        {t("vehicleDetails")}
       </Typography>
       <Card sx={{ mb: 2.5 }}>
         <CardContent>
           <Typography variant="caption" color="text.secondary">
-            Vehicle Type
+            {t("vehicleType")}
           </Typography>
           <Grid container spacing={1.5} sx={{ mt: 0.5, mb: 2.5 }}>
             {vehicleTypes.map((vt) => {
@@ -178,7 +190,7 @@ export default function ParkInForm() {
                       <VehicleIcon name={vt.name} />
                     </Avatar>
                     <Typography variant="body2" sx={{ fontWeight: 600, color: selected ? color : "text.primary" }}>
-                      {vt.name}
+                      {t(vehicleTypeKey(vt.name))}
                     </Typography>
                   </Card>
                 </Grid>
@@ -188,7 +200,7 @@ export default function ParkInForm() {
 
           {!isCycle && (
             <TextField
-              label={isLast4Mode ? "Last 4 digits" : "Vehicle number"}
+              label={isLast4Mode ? t("last4Digits") : t("vehicleNumber")}
               fullWidth
               value={vehicleNumber}
               onChange={(e) => {
@@ -281,12 +293,12 @@ export default function ParkInForm() {
       {!activeMember && collectAtCheckIn && (
         <>
           <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
-            Payment
+            {t("payment")}
           </Typography>
           <Card sx={{ mb: 3 }}>
             <CardContent>
               <TextField
-                label="Amount paid"
+                label={t("amountPaid")}
                 type="number"
                 fullWidth
                 value={amountPaid}
@@ -298,13 +310,18 @@ export default function ParkInForm() {
               {paidValue > 0 && (
                 <>
                   <Typography variant="caption" color="text.secondary">
-                    Payment mode
+                    {t("paymentMode")}
                   </Typography>
                   <Grid container spacing={1.5} sx={{ mt: 0.5 }}>
                     {(
                       [
-                        { mode: "cash" as PaymentMode, label: "Cash", icon: <PaymentsIcon />, color: CASH_COLOR },
-                        { mode: "online" as PaymentMode, label: "Online", icon: <CreditCardIcon />, color: ONLINE_COLOR },
+                        { mode: "cash" as PaymentMode, label: t("cash"), icon: <PaymentsIcon />, color: CASH_COLOR },
+                        {
+                          mode: "online" as PaymentMode,
+                          label: t("online"),
+                          icon: <CreditCardIcon />,
+                          color: ONLINE_COLOR,
+                        },
                       ]
                     ).map((opt) => {
                       const selected = paymentMode === opt.mode;
@@ -360,7 +377,7 @@ export default function ParkInForm() {
         onClick={handlePark}
         sx={{ borderRadius: 6, py: 1.3, fontWeight: 600, boxShadow: "0 6px 16px rgba(0,101,143,0.35)" }}
       >
-        {parking ? "Issuing Ticket…" : "Park & Issue Ticket"}
+        {parking ? t("issuingTicket") : t("parkAndIssueTicket")}
       </Button>
 
       <ParkConfirmationDialog confirmation={confirmation} onClose={() => setConfirmation(null)} />

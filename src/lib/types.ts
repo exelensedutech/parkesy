@@ -1,5 +1,7 @@
 export type Role = "admin" | "employee";
 
+export type Language = "en" | "ta";
+
 export interface TeamInvite {
   id: string;
   name: string;

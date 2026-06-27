@@ -10,14 +10,16 @@ import Grid from "@mui/material/Grid";
 import Divider from "@mui/material/Divider";
 import Avatar from "@mui/material/Avatar";
 import Stack from "@mui/material/Stack";
+import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
+import ToggleButton from "@mui/material/ToggleButton";
 import LogoutIcon from "@mui/icons-material/Logout";
 import SheetHandle from "./SheetHandle";
 import { useAppStore } from "@/lib/store";
-import { Address } from "@/lib/types";
+import { Address, Language } from "@/lib/types";
 import { BOTTOM_SHEET_PAPER_SX } from "@/lib/sheetStyles";
 
 export default function UserProfileSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const { userName, userAddress, phone, role, updateUserProfile, logout } = useAppStore();
+  const { userName, userAddress, phone, role, language, setLanguage, updateUserProfile, logout } = useAppStore();
   const [name, setName] = useState(userName);
   const [address, setAddress] = useState<Address>(userAddress);
 
@@ -51,6 +53,20 @@ export default function UserProfileSheet({ open, onClose }: { open: boolean; onC
             </Typography>
           </Box>
         </Stack>
+
+        <Typography variant="caption" color="text.secondary">
+          Language
+        </Typography>
+        <ToggleButtonGroup
+          value={language}
+          exclusive
+          fullWidth
+          onChange={(_, value: Language | null) => value && setLanguage(value)}
+          sx={{ mt: 0.5, mb: 2.5 }}
+        >
+          <ToggleButton value="en">English</ToggleButton>
+          <ToggleButton value="ta">தமிழ்</ToggleButton>
+        </ToggleButtonGroup>
 
         <TextField label="Name" fullWidth value={name} onChange={(e) => setName(e.target.value)} sx={{ mb: 2 }} />
 

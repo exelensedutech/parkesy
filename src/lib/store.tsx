@@ -3,10 +3,12 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { supabase } from "./supabaseClient";
 import { compressImage, randomId } from "./imageCompress";
+import { translate, TranslationKey } from "./i18n";
 import {
   Address,
   Expense,
   IdProof,
+  Language,
   Member,
   MemberPayment,
   ParkingSession,
@@ -195,6 +197,9 @@ interface AppState {
   userName: string;
   userAddress: Address;
   phone: string;
+  language: Language;
+  setLanguage: (language: Language) => void;
+  t: (key: TranslationKey) => string;
   signup: (phone: string, password: string, name: string) => Promise<string | null>;
   login: (phone: string, password: string) => Promise<boolean>;
   logout: () => void;
@@ -256,6 +261,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [userName, setUserName] = useState("");
   const [userAddress, setUserAddress] = useState<Address>({});
   const [phone, setPhone] = useState("");
+  const [language, setLanguageState] = useState<Language>("en");
   const [businessId, setBusinessId] = useState<string | null>(null);
   const [profilesById, setProfilesById] = useState<ProfilesById>(new Map());
 
@@ -293,7 +299,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
       const { data: profile, error: profileError } = await supabase
         .from("profiles")
-        .select("name, phone, address, role, business_id")
+        .select("name, phone, address, role, business_id, language")
         .eq("id", userId)
         .maybeSingle();
 
@@ -315,6 +321,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       setUserName(profile.name);
       setUserAddress((profile.address as Address) ?? {});
       setPhone(profile.phone);
+      setLanguageState((profile.language as Language) ?? "en");
       setBusinessId(profile.business_id);
 
       const [
@@ -405,6 +412,25 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       userName,
       userAddress,
       phone,
+      language,
+      setLanguage: (lang) => {
+        setLanguageState(lang);
+        void supabase.auth.getUser().then(({ data }) => {
+          const userId = data.user?.id;
+          if (!userId) return;
+          void supabase
+            .from("profiles")
+            .update({ language: lang })
+            .eq("id", userId)
+            .select()
+            .maybeSingle()
+            .then(({ data, error }) => {
+              if (error) console.error("Failed to save language preference:", error);
+              else if (!data) console.error("Language update matched no rows — userId:", userId);
+            });
+        });
+      },
+      t: (key) => translate(language, key),
       signup: async (newPhone, password, name) => {
         const email = phoneToEmail(newPhone);
         const { data, error } = await supabase.auth.signUp({ email, password });
@@ -715,6 +741,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       userName,
       userAddress,
       phone,
+      language,
       businessId,
       profilesById,
       businessName,
