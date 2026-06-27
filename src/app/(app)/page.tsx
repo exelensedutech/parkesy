@@ -33,7 +33,7 @@ type DashboardPeriod = "today" | "week" | "month";
 
 const PERIOD_LABELS: Record<DashboardPeriod, string> = {
   today: "Today",
-  week: "This Week",
+  week: "Last 7 Days",
   month: "This Month",
 };
 
@@ -92,8 +92,8 @@ export default function HomePage() {
 
   const net = collected - expensesInRange;
   const netColor = net >= 0 ? GREEN : "#C62828";
-  const total = collected + expensesInRange || 1;
-  const sharePct = (collected / total) * 100;
+  const hasMoneyData = collected + expensesInRange > 0;
+  const sharePct = hasMoneyData ? (collected / (collected + expensesInRange)) * 100 : 0;
 
   const trafficMetrics = [
     { label: "Entered", value: entered, icon: <LoginIcon />, color: "#1565C0" },
@@ -121,13 +121,13 @@ export default function HomePage() {
           sx={{ minWidth: 180 }}
         >
           <MenuItem value="today">Today</MenuItem>
-          <MenuItem value="week">This Week (Last 7 days)</MenuItem>
+          <MenuItem value="week">Last 7 Days</MenuItem>
           <MenuItem value="month">This Month</MenuItem>
         </Select>
       </Stack>
 
       <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
-        {PERIOD_LABELS[period]}&apos;s Traffic
+        Traffic
       </Typography>
       <Grid container spacing={1.5} sx={{ mb: 2.5 }}>
         {trafficMetrics.map((m) => (
@@ -148,7 +148,7 @@ export default function HomePage() {
       </Grid>
 
       <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
-        {PERIOD_LABELS[period]}&apos;s Collections
+        Collections
       </Typography>
       <Grid container spacing={1.5} sx={{ mb: 2 }}>
         {metrics.map((m) => (
@@ -204,8 +204,12 @@ export default function HomePage() {
           </Grid>
 
           <Box sx={{ display: "flex", height: 10, borderRadius: 5, overflow: "hidden", bgcolor: "grey.100", mb: 1 }}>
-            <Box sx={{ width: `${sharePct}%`, bgcolor: GREEN }} />
-            <Box sx={{ width: `${100 - sharePct}%`, bgcolor: ORANGE }} />
+            {hasMoneyData && (
+              <>
+                <Box sx={{ width: `${sharePct}%`, bgcolor: GREEN }} />
+                <Box sx={{ width: `${100 - sharePct}%`, bgcolor: ORANGE }} />
+              </>
+            )}
           </Box>
           <Stack direction="row" spacing={2.5}>
             <Stack direction="row" spacing={0.75} sx={{ alignItems: "center" }}>
