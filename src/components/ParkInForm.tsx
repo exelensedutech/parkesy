@@ -13,11 +13,11 @@ import Avatar from "@mui/material/Avatar";
 import IconButton from "@mui/material/IconButton";
 import InputAdornment from "@mui/material/InputAdornment";
 import Alert from "@mui/material/Alert";
+import Chip from "@mui/material/Chip";
 import Dialog from "@mui/material/Dialog";
 import DialogContent from "@mui/material/DialogContent";
 import DialogActions from "@mui/material/DialogActions";
 import Drawer from "@mui/material/Drawer";
-import List from "@mui/material/List";
 import ListItemButton from "@mui/material/ListItemButton";
 import ListItemText from "@mui/material/ListItemText";
 import Divider from "@mui/material/Divider";
@@ -372,21 +372,49 @@ export default function ParkInForm() {
           <Typography variant="h6" sx={{ px: 3, mb: 1.5 }}>
             Which vehicle is this?
           </Typography>
-          <List sx={{ py: 0 }}>
-            {matchingMembers.map((m) => (
-              <ListItemButton
-                key={m.id}
-                selected={m.id === selectedMemberId}
-                onClick={() => {
-                  setSelectedMemberId(m.id);
-                  setNoneSelected(false);
-                  setMemberPickerOpen(false);
-                }}
-              >
-                <ListItemText primary={m.vehicleNumber} secondary={m.customerName || undefined} />
-              </ListItemButton>
-            ))}
-          </List>
+          <Stack spacing={1.5} sx={{ px: 2, mb: 1.5 }}>
+            {matchingMembers.map((m) => {
+              const expiry = new Date(m.expiryDate);
+              const daysToExpiry = Math.ceil((expiry.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+              const expiringSoon = daysToExpiry <= 7;
+              const selected = m.id === selectedMemberId;
+              const color = VEHICLE_COLORS[selectedVehicleType.name];
+              return (
+                <Card
+                  key={m.id}
+                  variant="outlined"
+                  onClick={() => {
+                    setSelectedMemberId(m.id);
+                    setNoneSelected(false);
+                    setMemberPickerOpen(false);
+                  }}
+                  sx={{
+                    cursor: "pointer",
+                    borderColor: selected ? color : "divider",
+                    borderWidth: selected ? 2 : 1,
+                  }}
+                >
+                  <CardContent sx={{ py: 1.25 }}>
+                    <Stack direction="row" sx={{ justifyContent: "space-between", alignItems: "center" }}>
+                      <Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}>
+                        <Avatar sx={{ bgcolor: color, width: 36, height: 36 }}>
+                          <VehicleIcon name={selectedVehicleType.name} />
+                        </Avatar>
+                        <Box>
+                          <Typography variant="subtitle1">{m.vehicleNumber}</Typography>
+                          <Typography variant="body2" color="text.secondary">
+                            {m.customerName ? `${m.customerName} · ` : ""}valid till{" "}
+                            {expiry.toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
+                          </Typography>
+                        </Box>
+                      </Stack>
+                      {expiringSoon && <Chip label="Expiring soon" size="small" color="warning" />}
+                    </Stack>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </Stack>
           <Divider />
           <ListItemButton
             onClick={() => {

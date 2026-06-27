@@ -486,49 +486,89 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         void supabase
           .from("businesses")
           .update({ name: trimmedName, address, phone: phone_.trim() })
-          .eq("id", businessId);
+          .eq("id", businessId)
+          .select()
+          .maybeSingle()
+          .then(({ data, error }) => {
+            if (error) console.error("Failed to save business details:", error);
+            else if (!data) console.error("Business details update matched no rows — businessId:", businessId);
+          });
       },
       vehicleNumberCaptureMode,
       setVehicleNumberCaptureMode: (mode) => {
-        console.log("[setVehicleNumberCaptureMode] businessId:", businessId, "mode:", mode);
-        if (!businessId) {
-          console.warn("[setVehicleNumberCaptureMode] aborting — no businessId");
-          return;
-        }
+        if (!businessId) return;
         setVehicleNumberCaptureModeState(mode);
         void supabase
           .from("businesses")
           .update({ vehicle_number_capture_mode: mode })
           .eq("id", businessId)
-          .then(({ error }) => {
-            if (error) console.error("[setVehicleNumberCaptureMode] update failed:", error);
-            else console.log("[setVehicleNumberCaptureMode] update succeeded");
+          .select()
+          .maybeSingle()
+          .then(({ data, error }) => {
+            if (error) console.error("Failed to save vehicle number capture mode:", error);
+            else if (!data) console.error("Capture mode update matched no rows — businessId:", businessId);
           });
       },
       collectAtCheckIn,
       setCollectAtCheckIn: (value) => {
         if (!businessId) return;
         setCollectAtCheckInState(value);
-        void supabase.from("businesses").update({ collect_at_checkin: value }).eq("id", businessId);
+        void supabase
+          .from("businesses")
+          .update({ collect_at_checkin: value })
+          .eq("id", businessId)
+          .select()
+          .maybeSingle()
+          .then(({ data, error }) => {
+            if (error) console.error("Failed to save collect-at-check-in setting:", error);
+            else if (!data) console.error("Collect-at-check-in update matched no rows — businessId:", businessId);
+          });
       },
       longStayThresholdHours,
       setLongStayThresholdHours: (hours) => {
         if (!businessId) return;
         setLongStayThresholdHoursState(hours);
-        void supabase.from("businesses").update({ long_stay_threshold_hours: hours }).eq("id", businessId);
+        void supabase
+          .from("businesses")
+          .update({ long_stay_threshold_hours: hours })
+          .eq("id", businessId)
+          .select()
+          .maybeSingle()
+          .then(({ data, error }) => {
+            if (error) console.error("Failed to save long-stay threshold:", error);
+            else if (!data) console.error("Long-stay threshold update matched no rows — businessId:", businessId);
+          });
       },
       vehicleTypes,
       updateVehicleTypeSlotsAndSlabs: (vehicleTypeId, totalSlots, slabs) => {
         setVehicleTypes((prev) =>
           prev.map((vt) => (vt.id === vehicleTypeId ? { ...vt, totalSlots, slabs } : vt))
         );
-        void supabase.from("vehicle_types").update({ total_slots: totalSlots, slabs }).eq("id", vehicleTypeId);
+        void supabase
+          .from("vehicle_types")
+          .update({ total_slots: totalSlots, slabs })
+          .eq("id", vehicleTypeId)
+          .select()
+          .maybeSingle()
+          .then(({ data, error }) => {
+            if (error) console.error("Failed to save vehicle type slots/slabs:", error);
+            else if (!data) console.error("Vehicle type slots/slabs update matched no rows — id:", vehicleTypeId);
+          });
       },
       updateVehicleTypeMembershipPricing: (vehicleTypeId, pricing) => {
         setVehicleTypes((prev) =>
           prev.map((vt) => (vt.id === vehicleTypeId ? { ...vt, membershipPricing: pricing } : vt))
         );
-        void supabase.from("vehicle_types").update({ membership_pricing: pricing }).eq("id", vehicleTypeId);
+        void supabase
+          .from("vehicle_types")
+          .update({ membership_pricing: pricing })
+          .eq("id", vehicleTypeId)
+          .select()
+          .maybeSingle()
+          .then(({ data, error }) => {
+            if (error) console.error("Failed to save vehicle type membership pricing:", error);
+            else if (!data) console.error("Vehicle type membership pricing update matched no rows — id:", vehicleTypeId);
+          });
       },
       sessions,
       expenses,

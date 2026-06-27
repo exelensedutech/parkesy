@@ -47,7 +47,12 @@ export default function EditVehicleTypeSheet({
       nextMemberPrices[d] = String(getMembershipPrice(vehicleType, d));
     });
     setMemberPrices(nextMemberPrices);
-  }, [vehicleType]);
+    // Re-sync only when a different vehicle type is opened for editing, not
+    // on every re-render that produces a new (but equivalent) object
+    // reference for the same vehicle type — that would wipe out in-progress
+    // edits the moment any unrelated store update happens.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [vehicleType?.id]);
 
   if (!vehicleType) return null;
 
