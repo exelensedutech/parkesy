@@ -222,7 +222,7 @@ interface AppState {
   expenses: Expense[];
   members: Member[];
   memberPayments: MemberPayment[];
-  findActiveMember: (vehicleNumber: string) => Member | undefined;
+  findMatchingMembers: (vehicleTypeId: string, vehicleNumber: string) => Member[];
   addMember: (input: AddMemberInput) => Promise<void>;
   renewMember: (memberId: string, durationMonths: number, paymentMode: PaymentMode) => Promise<void>;
   startSession: (
@@ -230,7 +230,8 @@ interface AppState {
     vehicleNumber: string,
     amountPaidAtEntry: number,
     paymentModeAtEntry?: PaymentMode,
-    vehiclePhotoUrl?: string
+    vehiclePhotoUrl?: string,
+    memberId?: string
   ) => Promise<string>;
   completeSession: (id: string, paymentMode?: PaymentMode) => Promise<ParkingSession | null>;
   updateSessionVehicleNumber: (sessionId: string, vehicleNumber: string) => void;
@@ -382,10 +383,18 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  const findActiveMember = (vehicleNumber: string): Member | undefined => {
+  const findMatchingMembers = (vehicleTypeId: string, vehicleNumber: string): Member[] => {
     const normalized = vehicleNumber.trim().toUpperCase();
-    if (!normalized) return undefined;
-    return members.find((m) => m.vehicleNumber === normalized && new Date(m.expiryDate).getTime() >= Date.now());
+    if (!normalized) return [];
+    // Suffix match (not equality) so "last 4 digits" capture mode still
+    // finds members, who are always stored with their full plate. In "full
+    // number" mode this is equivalent to an exact match in practice.
+    return members.filter(
+      (m) =>
+        m.vehicleTypeId === vehicleTypeId &&
+        m.vehicleNumber.endsWith(normalized) &&
+        new Date(m.expiryDate).getTime() >= Date.now()
+    );
   };
 
   const value = useMemo<AppState>(
@@ -514,7 +523,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       expenses,
       members,
       memberPayments,
-      findActiveMember,
+      findMatchingMembers,
       addMember: async (input) => {
         const { data, error } = await supabase.rpc("add_member", {
           p_vehicle_number: input.vehicleNumber,
@@ -566,13 +575,21 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           setMemberPayments((prev) => [mapMemberPaymentRow(payment, profilesById), ...prev]);
         }
       },
-      startSession: async (vehicleTypeId, vehicleNumber, amountPaidAtEntry, paymentModeAtEntry, vehiclePhotoUrl) => {
+      startSession: async (
+        vehicleTypeId,
+        vehicleNumber,
+        amountPaidAtEntry,
+        paymentModeAtEntry,
+        vehiclePhotoUrl,
+        memberId
+      ) => {
         const { data, error } = await supabase.rpc("start_parking_session", {
           p_vehicle_type_id: vehicleTypeId,
           p_vehicle_number: vehicleNumber,
           p_amount_paid_at_entry: amountPaidAtEntry,
           p_payment_mode_at_entry: paymentModeAtEntry ?? null,
           p_vehicle_photo_url: vehiclePhotoUrl ?? null,
+          p_member_id: memberId ?? null,
         });
         if (error || !data) {
           console.error("Failed to start parking session:", error);

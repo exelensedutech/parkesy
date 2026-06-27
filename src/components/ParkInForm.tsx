@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Box from "@mui/material/Box";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
@@ -16,6 +16,10 @@ import Alert from "@mui/material/Alert";
 import Dialog from "@mui/material/Dialog";
 import DialogContent from "@mui/material/DialogContent";
 import DialogActions from "@mui/material/DialogActions";
+import List from "@mui/material/List";
+import ListItemButton from "@mui/material/ListItemButton";
+import ListItemText from "@mui/material/ListItemText";
+import Divider from "@mui/material/Divider";
 import CameraAltIcon from "@mui/icons-material/CameraAlt";
 import DeleteIcon from "@mui/icons-material/Delete";
 import PaymentsIcon from "@mui/icons-material/Payments";
@@ -29,7 +33,7 @@ import { PaymentMode } from "@/lib/types";
 import { VEHICLE_COLORS, CASH_COLOR, ONLINE_COLOR } from "@/lib/colors";
 
 export default function ParkInForm() {
-  const { vehicleTypes, startSession, findActiveMember, uploadPhoto, vehicleNumberCaptureMode, collectAtCheckIn } =
+  const { vehicleTypes, startSession, findMatchingMembers, uploadPhoto, vehicleNumberCaptureMode, collectAtCheckIn } =
     useAppStore();
   const isLast4Mode = vehicleNumberCaptureMode === "last4";
   const [vehicleTypeId, setVehicleTypeId] = useState(vehicleTypes[0].id);
@@ -41,12 +45,30 @@ export default function ParkInForm() {
   const [photoUrl, setPhotoUrl] = useState<string | undefined>();
   const [photoFile, setPhotoFile] = useState<File | undefined>();
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [selectedMemberId, setSelectedMemberId] = useState<string | undefined>();
+  const [noneSelected, setNoneSelected] = useState(false);
+  const [memberPickerOpen, setMemberPickerOpen] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const selectedVehicleType = vehicleTypes.find((vt) => vt.id === vehicleTypeId)!;
   const isCycle = selectedVehicleType.name === "Cycle";
-  const activeMember = !isCycle ? findActiveMember(vehicleNumber) : undefined;
+  const matchingMembers = !isCycle ? findMatchingMembers(vehicleTypeId, vehicleNumber) : [];
+  const activeMember =
+    matchingMembers.length === 1
+      ? matchingMembers[0]
+      : matchingMembers.length > 1
+        ? matchingMembers.find((m) => m.id === selectedMemberId)
+        : undefined;
+  const isAmbiguous = matchingMembers.length > 1 && !activeMember && !noneSelected;
+
+  // The set of possible matches changes whenever the typed number or vehicle
+  // type changes — any previous explicit choice no longer applies.
+  useEffect(() => {
+    setSelectedMemberId(undefined);
+    setNoneSelected(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [vehicleNumber, vehicleTypeId]);
 
   const handlePhotoSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -89,7 +111,8 @@ export default function ParkInForm() {
         finalVehicleNumber,
         paidValue,
         paidValue > 0 ? paymentMode : undefined,
-        uploadedPhotoPath
+        uploadedPhotoPath,
+        activeMember?.id
       );
       setConfirmation({
         tokenCode,
@@ -209,12 +232,41 @@ export default function ParkInForm() {
             </Stack>
           )}
 
-          {activeMember && (
-            <Alert icon={<CardMembershipIcon fontSize="inherit" />} severity="success" sx={{ mt: 1.5 }}>
-              Member{activeMember.customerName ? ` — ${activeMember.customerName}` : ""} · valid till{" "}
-              {new Date(activeMember.expiryDate).toLocaleDateString("en-IN", { day: "numeric", month: "short" })} ·
-              Entry is free
+          {isAmbiguous && (
+            <Alert
+              icon={<CardMembershipIcon fontSize="inherit" />}
+              severity="info"
+              sx={{ mt: 1.5, cursor: "pointer" }}
+              onClick={() => setMemberPickerOpen(true)}
+            >
+              {matchingMembers.length} {selectedVehicleType.name.toLowerCase()}s found with this number — tap to
+              confirm which one
             </Alert>
+          )}
+
+          {activeMember && (
+            <Alert
+              icon={<CardMembershipIcon fontSize="inherit" />}
+              severity="success"
+              sx={{ mt: 1.5, cursor: matchingMembers.length > 1 ? "pointer" : undefined }}
+              onClick={matchingMembers.length > 1 ? () => setMemberPickerOpen(true) : undefined}
+            >
+              Member{activeMember.customerName ? ` — ${activeMember.customerName}` : ""} ({activeMember.vehicleNumber}
+              ) · valid till{" "}
+              {new Date(activeMember.expiryDate).toLocaleDateString("en-IN", { day: "numeric", month: "short" })} ·
+              Entry is free{matchingMembers.length > 1 ? " · tap to change" : ""}
+            </Alert>
+          )}
+
+          {noneSelected && matchingMembers.length > 1 && (
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ display: "block", mt: 1, cursor: "pointer" }}
+              onClick={() => setMemberPickerOpen(true)}
+            >
+              Not matched to a member · tap to check matches
+            </Typography>
           )}
         </CardContent>
       </Card>
@@ -305,6 +357,36 @@ export default function ParkInForm() {
       </Button>
 
       <ParkConfirmationDialog confirmation={confirmation} onClose={() => setConfirmation(null)} />
+
+      <Dialog open={memberPickerOpen} onClose={() => setMemberPickerOpen(false)} maxWidth="xs" fullWidth>
+        <DialogContent sx={{ p: 0 }}>
+          <List sx={{ py: 0 }}>
+            {matchingMembers.map((m) => (
+              <ListItemButton
+                key={m.id}
+                selected={m.id === selectedMemberId}
+                onClick={() => {
+                  setSelectedMemberId(m.id);
+                  setNoneSelected(false);
+                  setMemberPickerOpen(false);
+                }}
+              >
+                <ListItemText primary={m.vehicleNumber} secondary={m.customerName || undefined} />
+              </ListItemButton>
+            ))}
+          </List>
+          <Divider />
+          <ListItemButton
+            onClick={() => {
+              setSelectedMemberId(undefined);
+              setNoneSelected(true);
+              setMemberPickerOpen(false);
+            }}
+          >
+            <ListItemText primary="None of these" secondary="Charge as a regular entry" />
+          </ListItemButton>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={previewOpen} onClose={() => setPreviewOpen(false)} maxWidth="xs" fullWidth>
         <DialogContent sx={{ p: 0 }}>
