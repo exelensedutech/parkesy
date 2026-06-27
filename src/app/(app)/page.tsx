@@ -7,7 +7,6 @@ import Typography from "@mui/material/Typography";
 import Grid from "@mui/material/Grid";
 import Stack from "@mui/material/Stack";
 import Avatar from "@mui/material/Avatar";
-import Chip from "@mui/material/Chip";
 import Divider from "@mui/material/Divider";
 import CircularProgress from "@mui/material/CircularProgress";
 import { alpha } from "@mui/material/styles";
@@ -27,7 +26,7 @@ const GREEN = "#2E7D32";
 const ORANGE = "#E65100";
 
 export default function HomePage() {
-  const { sessions, expenses, businessName, vehicleTypes, memberPayments } = useAppStore();
+  const { sessions, expenses, vehicleTypes, memberPayments } = useAppStore();
   const today = new Date();
 
   const currentlyParked = sessions.filter((s) => s.status === "parked").length;
@@ -100,17 +99,6 @@ export default function HomePage() {
 
   return (
     <>
-      <Stack direction="row" sx={{ justifyContent: "space-between", alignItems: "flex-start", mb: 2.5 }}>
-        <Typography variant="h5" sx={{ fontWeight: 700 }}>
-          {businessName}
-        </Typography>
-        <Chip
-          label={today.toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
-          size="small"
-          variant="outlined"
-        />
-      </Stack>
-
       <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
         Today&apos;s Traffic
       </Typography>
