@@ -490,9 +490,20 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       },
       vehicleNumberCaptureMode,
       setVehicleNumberCaptureMode: (mode) => {
-        if (!businessId) return;
+        console.log("[setVehicleNumberCaptureMode] businessId:", businessId, "mode:", mode);
+        if (!businessId) {
+          console.warn("[setVehicleNumberCaptureMode] aborting — no businessId");
+          return;
+        }
         setVehicleNumberCaptureModeState(mode);
-        void supabase.from("businesses").update({ vehicle_number_capture_mode: mode }).eq("id", businessId);
+        void supabase
+          .from("businesses")
+          .update({ vehicle_number_capture_mode: mode })
+          .eq("id", businessId)
+          .then(({ error }) => {
+            if (error) console.error("[setVehicleNumberCaptureMode] update failed:", error);
+            else console.log("[setVehicleNumberCaptureMode] update succeeded");
+          });
       },
       collectAtCheckIn,
       setCollectAtCheckIn: (value) => {
