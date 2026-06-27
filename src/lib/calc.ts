@@ -13,13 +13,33 @@ export function formatDuration(hours: number): string {
   return `${h}h ${m}m`;
 }
 
+// The business operates in India — "today" and "this month" must mean the
+// IST calendar date, not whatever timezone the browser or server happens to
+// be running in (Vercel's servers run in UTC, which can silently shift day
+// boundaries by hours depending on time of day).
+const IST_PARTS_FORMATTER = new Intl.DateTimeFormat("en-US", {
+  timeZone: "Asia/Kolkata",
+  year: "numeric",
+  month: "numeric",
+  day: "numeric",
+});
+
+function getISTDateParts(date: Date): { year: number; month: number; day: number } {
+  const parts = IST_PARTS_FORMATTER.formatToParts(date);
+  const get = (type: string) => Number(parts.find((p) => p.type === type)?.value);
+  return { year: get("year"), month: get("month"), day: get("day") };
+}
+
 export function isSameDay(iso: string, reference: Date): boolean {
-  return new Date(iso).toDateString() === reference.toDateString();
+  const a = getISTDateParts(new Date(iso));
+  const b = getISTDateParts(reference);
+  return a.year === b.year && a.month === b.month && a.day === b.day;
 }
 
 export function isSameMonth(iso: string, reference: Date): boolean {
-  const d = new Date(iso);
-  return d.getMonth() === reference.getMonth() && d.getFullYear() === reference.getFullYear();
+  const a = getISTDateParts(new Date(iso));
+  const b = getISTDateParts(reference);
+  return a.year === b.year && a.month === b.month;
 }
 
 export function isWithinRange(iso: string, start: Date, end: Date): boolean {

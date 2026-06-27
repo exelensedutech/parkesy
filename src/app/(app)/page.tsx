@@ -85,16 +85,16 @@ export default function HomePage() {
   const todaySharePct = (collectedToday / todayTotal) * 100;
 
   const trafficMetrics = [
-    { label: "Entered Today", value: enteredToday, icon: <LoginIcon />, color: "#1565C0" },
-    { label: "Exited Today", value: exitedToday, icon: <LogoutIcon />, color: "#AD1457" },
+    { label: "Entered", value: enteredToday, icon: <LoginIcon />, color: "#1565C0" },
+    { label: "Exited", value: exitedToday, icon: <LogoutIcon />, color: "#AD1457" },
     { label: "Currently Parked", value: currentlyParked, icon: <LocalParkingIcon />, color: "#37474F" },
   ];
 
   const metrics = [
-    { label: "Collected Today", value: `₹${collectedToday}`, icon: <PaymentsIcon />, color: GREEN },
-    { label: "Expenses Today", value: `₹${expensesToday}`, icon: <ReceiptLongIcon />, color: ORANGE },
-    { label: "Cash Today", value: `₹${cashToday}`, icon: <LocalAtmIcon />, color: "#00838F" },
-    { label: "Online Today", value: `₹${onlineToday}`, icon: <CreditCardIcon />, color: "#5E35B1" },
+    { label: "Collected", value: `₹${collectedToday}`, icon: <PaymentsIcon />, color: GREEN },
+    { label: "Expenses", value: `₹${expensesToday}`, icon: <ReceiptLongIcon />, color: ORANGE },
+    { label: "Cash", value: `₹${cashToday}`, icon: <LocalAtmIcon />, color: "#00838F" },
+    { label: "Online", value: `₹${onlineToday}`, icon: <CreditCardIcon />, color: "#5E35B1" },
   ];
 
   return (

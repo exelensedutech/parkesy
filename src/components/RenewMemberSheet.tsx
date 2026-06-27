@@ -59,7 +59,12 @@ export default function RenewMemberSheet({ member, onClose }: { member: Member |
           </Typography>
           <Typography variant="body2" color="text.secondary">
             New expiry:{" "}
-            {new Date(newExpiry).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+            {new Date(newExpiry).toLocaleDateString("en-IN", {
+              day: "numeric",
+              month: "short",
+              year: "numeric",
+              timeZone: "Asia/Kolkata",
+            })}
           </Typography>
         </Stack>
 

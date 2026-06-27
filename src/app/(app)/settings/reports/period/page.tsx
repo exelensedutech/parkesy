@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import dayjs, { Dayjs } from "dayjs";
+import { Dayjs } from "dayjs";
+import dayjs from "@/lib/dayjsConfig";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
 import Typography from "@mui/material/Typography";
@@ -52,10 +53,10 @@ export default function PeriodReportPage() {
   const router = useRouter();
   const { role, sessions, expenses, vehicleTypes, members, memberPayments } = useAppStore();
   const [period, setPeriod] = useState<Period>("daily");
-  const [dailyDate, setDailyDate] = useState<Dayjs>(dayjs());
-  const [weeklyFrom, setWeeklyFrom] = useState<Dayjs>(dayjs());
-  const [weeklyTo, setWeeklyTo] = useState<Dayjs>(dayjs().add(6, "day"));
-  const [monthlyAnchor, setMonthlyAnchor] = useState<Dayjs>(dayjs());
+  const [dailyDate, setDailyDate] = useState<Dayjs>(dayjs.tz());
+  const [weeklyFrom, setWeeklyFrom] = useState<Dayjs>(dayjs.tz());
+  const [weeklyTo, setWeeklyTo] = useState<Dayjs>(dayjs.tz().add(6, "day"));
+  const [monthlyAnchor, setMonthlyAnchor] = useState<Dayjs>(dayjs.tz());
   const [dailyOpen, setDailyOpen] = useState(false);
   const [weeklyFromOpen, setWeeklyFromOpen] = useState(false);
   const [weeklyToOpen, setWeeklyToOpen] = useState(false);

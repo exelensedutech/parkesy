@@ -121,6 +121,7 @@ export default function LongStayPage() {
                           month: "short",
                           hour: "numeric",
                           minute: "2-digit",
+                          timeZone: "Asia/Kolkata",
                         })}{" "}
                         · {s.recordedBy}
                       </Typography>

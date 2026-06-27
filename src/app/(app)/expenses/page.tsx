@@ -17,6 +17,7 @@ import ExpenseDetailSheet from "@/components/ExpenseDetailSheet";
 import { getExpenseCategory } from "@/lib/expenseCategories";
 import { useAppStore } from "@/lib/store";
 import { Expense } from "@/lib/types";
+import { isSameMonth } from "@/lib/calc";
 
 const PRIMARY = "#00658F";
 
@@ -28,14 +29,11 @@ export default function ExpensesPage() {
 
   const now = new Date();
   const monthExpenses = expenses
-    .filter((e) => {
-      const d = new Date(e.expenseDate);
-      return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
-    })
+    .filter((e) => isSameMonth(e.expenseDate, now))
     .sort((a, b) => new Date(b.expenseDate).getTime() - new Date(a.expenseDate).getTime());
 
   const total = monthExpenses.reduce((sum, e) => sum + e.amount, 0);
-  const monthLabel = now.toLocaleDateString("en-IN", { month: "long", year: "numeric" });
+  const monthLabel = now.toLocaleDateString("en-IN", { month: "long", year: "numeric", timeZone: "Asia/Kolkata" });
 
   const handleEdit = (expense: Expense) => {
     setViewingExpense(null);
@@ -109,7 +107,13 @@ export default function ExpensesPage() {
                         </Typography>
                       )}
                       <Typography variant="caption" color="text.secondary">
-                        {new Date(e.expenseDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })} ·{" "}
+                        {new Date(e.expenseDate).toLocaleDateString("en-IN", {
+                          day: "numeric",
+                          month: "short",
+                          year: "numeric",
+                          timeZone: "Asia/Kolkata",
+                        })}{" "}
+                        ·{" "}
                         {e.recordedBy}
                       </Typography>
                     </Box>

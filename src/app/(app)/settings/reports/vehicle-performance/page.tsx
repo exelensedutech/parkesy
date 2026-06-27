@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import dayjs, { Dayjs } from "dayjs";
+import { Dayjs } from "dayjs";
+import dayjs from "@/lib/dayjsConfig";
 import Box from "@mui/material/Box";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
@@ -20,8 +21,8 @@ import { VEHICLE_COLORS } from "@/lib/colors";
 export default function VehiclePerformancePage() {
   const router = useRouter();
   const { role, sessions, vehicleTypes } = useAppStore();
-  const [from, setFrom] = useState<Dayjs>(dayjs().startOf("month"));
-  const [to, setTo] = useState<Dayjs>(dayjs());
+  const [from, setFrom] = useState<Dayjs>(dayjs.tz().startOf("month"));
+  const [to, setTo] = useState<Dayjs>(dayjs.tz());
 
   if (role !== "admin") {
     return (

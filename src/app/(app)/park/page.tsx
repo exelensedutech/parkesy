@@ -140,6 +140,7 @@ export default function ParkPage() {
                 month: "short",
                 hour: "numeric",
                 minute: "2-digit",
+                timeZone: "Asia/Kolkata",
               });
               return (
                 <Card key={session.id} onClick={() => setOutSession(session)} sx={{ cursor: "pointer" }}>

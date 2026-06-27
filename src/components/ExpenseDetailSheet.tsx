@@ -80,6 +80,7 @@ export default function ExpenseDetailSheet({
                 day: "numeric",
                 month: "short",
                 year: "numeric",
+                timeZone: "Asia/Kolkata",
               })}
             </Typography>
           </Stack>

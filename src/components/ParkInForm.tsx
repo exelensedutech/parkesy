@@ -256,8 +256,12 @@ export default function ParkInForm() {
             >
               Member{activeMember.customerName ? ` — ${activeMember.customerName}` : ""} ({activeMember.vehicleNumber}
               ) · valid till{" "}
-              {new Date(activeMember.expiryDate).toLocaleDateString("en-IN", { day: "numeric", month: "short" })} ·
-              Entry is free{matchingMembers.length > 1 ? " · tap to change" : ""}
+              {new Date(activeMember.expiryDate).toLocaleDateString("en-IN", {
+                day: "numeric",
+                month: "short",
+                timeZone: "Asia/Kolkata",
+              })}{" "}
+              · Entry is free{matchingMembers.length > 1 ? " · tap to change" : ""}
             </Alert>
           )}
 
@@ -404,7 +408,11 @@ export default function ParkInForm() {
                           <Typography variant="subtitle1">{m.vehicleNumber}</Typography>
                           <Typography variant="body2" color="text.secondary">
                             {m.customerName ? `${m.customerName} · ` : ""}valid till{" "}
-                            {expiry.toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
+                            {expiry.toLocaleDateString("en-IN", {
+                              day: "numeric",
+                              month: "short",
+                              timeZone: "Asia/Kolkata",
+                            })}
                           </Typography>
                         </Box>
                       </Stack>

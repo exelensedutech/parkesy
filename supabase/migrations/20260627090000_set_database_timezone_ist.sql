@@ -1,0 +1,13 @@
+-- This is a pan-India product with no plans to expand beyond it, so every
+-- "calendar day"/"calendar month" calculation should mean IST, not whatever
+-- timezone a given connection happens to default to (Supabase's database
+-- defaults to UTC). All timestamp columns remain timestamptz (absolute UTC
+-- instants are still stored correctly either way) — this only changes how
+-- calendar arithmetic (e.g. now() + interval '1 month', used by
+-- add_member/renew_member to compute expiry_date) and date/time display
+-- default to behaving for new connections.
+--
+-- pg_cron's own schedule timezone (cron.timezone, separate from this
+-- setting, defaults to UTC) is unaffected, so the nightly photo-cleanup job
+-- continues running at the same actual moment it always has.
+alter database postgres set timezone to 'Asia/Kolkata';

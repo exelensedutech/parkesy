@@ -183,6 +183,7 @@ export default function ParkOutSheet({
               month: "short",
               hour: "numeric",
               minute: "2-digit",
+              timeZone: "Asia/Kolkata",
             })}
           </Typography>
           <Typography variant="body2" color="text.secondary">

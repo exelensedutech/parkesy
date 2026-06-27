@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import dayjs, { Dayjs } from "dayjs";
+import { Dayjs } from "dayjs";
+import dayjs from "@/lib/dayjsConfig";
 import Box from "@mui/material/Box";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
@@ -20,8 +21,8 @@ import { isWithinRange } from "@/lib/calc";
 export default function RefundsPage() {
   const router = useRouter();
   const { role, sessions, vehicleTypes } = useAppStore();
-  const [from, setFrom] = useState<Dayjs>(dayjs());
-  const [to, setTo] = useState<Dayjs>(dayjs());
+  const [from, setFrom] = useState<Dayjs>(dayjs.tz());
+  const [to, setTo] = useState<Dayjs>(dayjs.tz());
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
 
   if (role !== "admin") {
@@ -103,6 +104,7 @@ export default function RefundsPage() {
                         month: "short",
                         hour: "numeric",
                         minute: "2-digit",
+                        timeZone: "Asia/Kolkata",
                       })}{" "}
                       · {(s.paymentModeAtExit ?? "—").toString().toUpperCase()} ·{" "}
                       {s.exitRecordedBy ?? s.recordedBy}

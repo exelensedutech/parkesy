@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import dayjs, { Dayjs } from "dayjs";
+import { Dayjs } from "dayjs";
+import dayjs from "@/lib/dayjsConfig";
 import Drawer from "@mui/material/Drawer";
 import Box from "@mui/material/Box";
 import Card from "@mui/material/Card";
@@ -43,7 +44,7 @@ export default function AddExpenseSheet({
   editingExpense?: Expense | null;
 }) {
   const { addExpense, updateExpense } = useAppStore();
-  const today = dayjs();
+  const today = dayjs.tz();
   const monthStart = today.startOf("month");
   const monthEnd = today.endOf("month");
 
@@ -65,7 +66,7 @@ export default function AddExpenseSheet({
       setCategory(editingExpense.title);
       setAmount(String(editingExpense.amount));
       setNote(editingExpense.note ?? "");
-      setDate(dayjs(editingExpense.expenseDate));
+      setDate(dayjs.tz(editingExpense.expenseDate));
     } else {
       setCategory(EXPENSE_CATEGORIES[0].name);
       setAmount("");
