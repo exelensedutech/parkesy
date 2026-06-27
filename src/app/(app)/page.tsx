@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Box from "@mui/material/Box";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
@@ -9,6 +10,8 @@ import Stack from "@mui/material/Stack";
 import Avatar from "@mui/material/Avatar";
 import Divider from "@mui/material/Divider";
 import CircularProgress from "@mui/material/CircularProgress";
+import Select, { SelectChangeEvent } from "@mui/material/Select";
+import MenuItem from "@mui/material/MenuItem";
 import { alpha } from "@mui/material/styles";
 import LocalParkingIcon from "@mui/icons-material/LocalParking";
 import LoginIcon from "@mui/icons-material/Login";
@@ -19,88 +22,112 @@ import LocalAtmIcon from "@mui/icons-material/LocalAtm";
 import CreditCardIcon from "@mui/icons-material/CreditCard";
 import VehicleIcon from "@/components/VehicleIcon";
 import { useAppStore } from "@/lib/store";
-import { isSameDay, isSameMonth } from "@/lib/calc";
+import { isWithinRange } from "@/lib/calc";
 import { VEHICLE_COLORS } from "@/lib/colors";
+import dayjs from "@/lib/dayjsConfig";
 
 const GREEN = "#2E7D32";
 const ORANGE = "#E65100";
 
+type DashboardPeriod = "today" | "week" | "month";
+
+const PERIOD_LABELS: Record<DashboardPeriod, string> = {
+  today: "Today",
+  week: "This Week",
+  month: "This Month",
+};
+
 export default function HomePage() {
   const { sessions, expenses, vehicleTypes, memberPayments } = useAppStore();
-  const today = new Date();
+  const [period, setPeriod] = useState<DashboardPeriod>("today");
+
+  const now = dayjs.tz();
+  const rangeStart =
+    period === "today"
+      ? now.startOf("day")
+      : period === "week"
+        ? now.subtract(6, "day").startOf("day")
+        : now.startOf("month");
+  const start = rangeStart.toDate();
+  const end = now.toDate();
 
   const currentlyParked = sessions.filter((s) => s.status === "parked").length;
-  const enteredToday = sessions.filter((s) => isSameDay(s.entryTime, today)).length;
-  const exitedToday = sessions.filter(
-    (s) => s.status === "completed" && s.exitTime && isSameDay(s.exitTime, today)
+  const entered = sessions.filter((s) => isWithinRange(s.entryTime, start, end)).length;
+  const exited = sessions.filter(
+    (s) => s.status === "completed" && s.exitTime && isWithinRange(s.exitTime, start, end)
   ).length;
 
-  const entryCollectedToday = sessions
-    .filter((s) => isSameDay(s.entryTime, today))
+  const entryCollected = sessions
+    .filter((s) => isWithinRange(s.entryTime, start, end))
     .reduce((sum, s) => sum + s.amountPaidAtEntry, 0);
-  const exitCollectedToday = sessions
-    .filter((s) => s.status === "completed" && s.exitTime && isSameDay(s.exitTime, today))
+  const exitCollected = sessions
+    .filter((s) => s.status === "completed" && s.exitTime && isWithinRange(s.exitTime, start, end))
     .reduce((sum, s) => sum + (s.amountPaidAtExit ?? 0), 0);
-  const memberRevenueToday = memberPayments
-    .filter((mp) => isSameDay(mp.paidAt, today))
+  const memberRevenue = memberPayments
+    .filter((mp) => isWithinRange(mp.paidAt, start, end))
     .reduce((sum, mp) => sum + mp.amount, 0);
-  const collectedToday = entryCollectedToday + exitCollectedToday + memberRevenueToday;
+  const collected = entryCollected + exitCollected + memberRevenue;
 
-  const cashToday =
+  const cash =
     sessions
-      .filter((s) => isSameDay(s.entryTime, today) && s.paymentModeAtEntry === "cash")
+      .filter((s) => isWithinRange(s.entryTime, start, end) && s.paymentModeAtEntry === "cash")
       .reduce((sum, s) => sum + s.amountPaidAtEntry, 0) +
     sessions
-      .filter((s) => s.status === "completed" && s.exitTime && isSameDay(s.exitTime, today) && s.paymentModeAtExit === "cash")
+      .filter(
+        (s) =>
+          s.status === "completed" &&
+          s.exitTime &&
+          isWithinRange(s.exitTime, start, end) &&
+          s.paymentModeAtExit === "cash"
+      )
       .reduce((sum, s) => sum + (s.amountPaidAtExit ?? 0), 0) +
     memberPayments
-      .filter((mp) => isSameDay(mp.paidAt, today) && mp.paymentMode === "cash")
+      .filter((mp) => isWithinRange(mp.paidAt, start, end) && mp.paymentMode === "cash")
       .reduce((sum, mp) => sum + mp.amount, 0);
-  const onlineToday = collectedToday - cashToday;
+  const online = collected - cash;
 
-  const expensesToday = expenses
-    .filter((e) => isSameDay(e.expenseDate, today))
+  const expensesInRange = expenses
+    .filter((e) => isWithinRange(e.expenseDate, start, end))
     .reduce((sum, e) => sum + e.amount, 0);
 
-  const netToday = collectedToday - expensesToday;
-  const netColor = netToday >= 0 ? GREEN : "#C62828";
-
-  const entryCollectedMonth = sessions
-    .filter((s) => isSameMonth(s.entryTime, today))
-    .reduce((sum, s) => sum + s.amountPaidAtEntry, 0);
-  const exitCollectedMonth = sessions
-    .filter((s) => s.status === "completed" && s.exitTime && isSameMonth(s.exitTime, today))
-    .reduce((sum, s) => sum + (s.amountPaidAtExit ?? 0), 0);
-  const memberRevenueMonth = memberPayments
-    .filter((mp) => isSameMonth(mp.paidAt, today))
-    .reduce((sum, mp) => sum + mp.amount, 0);
-  const collectedMonth = entryCollectedMonth + exitCollectedMonth + memberRevenueMonth;
-  const expensesMonth = expenses
-    .filter((e) => isSameMonth(e.expenseDate, today))
-    .reduce((sum, e) => sum + e.amount, 0);
-  const netMonth = collectedMonth - expensesMonth;
-  const monthTotal = collectedMonth + expensesMonth || 1;
-  const collectedSharePct = (collectedMonth / monthTotal) * 100;
-  const todayTotal = collectedToday + expensesToday || 1;
-  const todaySharePct = (collectedToday / todayTotal) * 100;
+  const net = collected - expensesInRange;
+  const netColor = net >= 0 ? GREEN : "#C62828";
+  const total = collected + expensesInRange || 1;
+  const sharePct = (collected / total) * 100;
 
   const trafficMetrics = [
-    { label: "Entered", value: enteredToday, icon: <LoginIcon />, color: "#1565C0" },
-    { label: "Exited", value: exitedToday, icon: <LogoutIcon />, color: "#AD1457" },
+    { label: "Entered", value: entered, icon: <LoginIcon />, color: "#1565C0" },
+    { label: "Exited", value: exited, icon: <LogoutIcon />, color: "#AD1457" },
     { label: "Currently Parked", value: currentlyParked, icon: <LocalParkingIcon />, color: "#37474F" },
   ];
 
   const metrics = [
-    { label: "Collected", value: `₹${collectedToday}`, icon: <PaymentsIcon />, color: GREEN },
-    { label: "Expenses", value: `₹${expensesToday}`, icon: <ReceiptLongIcon />, color: ORANGE },
-    { label: "Cash", value: `₹${cashToday}`, icon: <LocalAtmIcon />, color: "#00838F" },
-    { label: "Online", value: `₹${onlineToday}`, icon: <CreditCardIcon />, color: "#5E35B1" },
+    { label: "Collected", value: `₹${collected}`, icon: <PaymentsIcon />, color: GREEN },
+    { label: "Expenses", value: `₹${expensesInRange}`, icon: <ReceiptLongIcon />, color: ORANGE },
+    { label: "Cash", value: `₹${cash}`, icon: <LocalAtmIcon />, color: "#00838F" },
+    { label: "Online", value: `₹${online}`, icon: <CreditCardIcon />, color: "#5E35B1" },
   ];
 
   return (
     <>
+      <Stack direction="row" sx={{ justifyContent: "space-between", alignItems: "center", mb: 2 }}>
+        <Typography variant="body2" color="text.secondary">
+          Showing
+        </Typography>
+        <Select
+          value={period}
+          size="small"
+          onChange={(e: SelectChangeEvent) => setPeriod(e.target.value as DashboardPeriod)}
+          sx={{ minWidth: 180 }}
+        >
+          <MenuItem value="today">Today</MenuItem>
+          <MenuItem value="week">This Week (Last 7 days)</MenuItem>
+          <MenuItem value="month">This Month</MenuItem>
+        </Select>
+      </Stack>
+
       <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
-        Today&apos;s Traffic
+        {PERIOD_LABELS[period]}&apos;s Traffic
       </Typography>
       <Grid container spacing={1.5} sx={{ mb: 2.5 }}>
         {trafficMetrics.map((m) => (
@@ -121,7 +148,7 @@ export default function HomePage() {
       </Grid>
 
       <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
-        Today&apos;s Collections
+        {PERIOD_LABELS[period]}&apos;s Collections
       </Typography>
       <Grid container spacing={1.5} sx={{ mb: 2 }}>
         {metrics.map((m) => (
@@ -147,7 +174,7 @@ export default function HomePage() {
       <Card sx={{ mb: 2.5 }}>
         <CardContent>
           <Typography variant="overline" sx={{ fontWeight: 700, color: "text.secondary", letterSpacing: 1 }}>
-            Today
+            {PERIOD_LABELS[period]}
           </Typography>
           <Grid container spacing={1.5} sx={{ mb: 2, mt: 0.5 }}>
             <Grid size={4}>
@@ -155,7 +182,7 @@ export default function HomePage() {
                 Collected
               </Typography>
               <Typography variant="h6" sx={{ fontWeight: 700, color: GREEN }}>
-                ₹{collectedToday}
+                ₹{collected}
               </Typography>
             </Grid>
             <Grid size={4}>
@@ -163,7 +190,7 @@ export default function HomePage() {
                 Expenses
               </Typography>
               <Typography variant="h6" sx={{ fontWeight: 700, color: ORANGE }}>
-                ₹{expensesToday}
+                ₹{expensesInRange}
               </Typography>
             </Grid>
             <Grid size={4}>
@@ -171,67 +198,16 @@ export default function HomePage() {
                 Net
               </Typography>
               <Typography variant="h6" sx={{ fontWeight: 700, color: netColor }}>
-                ₹{netToday}
+                ₹{net}
               </Typography>
             </Grid>
           </Grid>
 
           <Box sx={{ display: "flex", height: 10, borderRadius: 5, overflow: "hidden", bgcolor: "grey.100", mb: 1 }}>
-            <Box sx={{ width: `${todaySharePct}%`, bgcolor: GREEN }} />
-            <Box sx={{ width: `${100 - todaySharePct}%`, bgcolor: ORANGE }} />
+            <Box sx={{ width: `${sharePct}%`, bgcolor: GREEN }} />
+            <Box sx={{ width: `${100 - sharePct}%`, bgcolor: ORANGE }} />
           </Box>
-          <Stack direction="row" spacing={2.5} sx={{ mb: 2 }}>
-            <Stack direction="row" spacing={0.75} sx={{ alignItems: "center" }}>
-              <Box sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: GREEN }} />
-              <Typography variant="caption" color="text.secondary">
-                Collected
-              </Typography>
-            </Stack>
-            <Stack direction="row" spacing={0.75} sx={{ alignItems: "center" }}>
-              <Box sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: ORANGE }} />
-              <Typography variant="caption" color="text.secondary">
-                Expenses
-              </Typography>
-            </Stack>
-          </Stack>
-
-          <Divider sx={{ mb: 2 }} />
-
-          <Typography variant="overline" sx={{ fontWeight: 700, color: "text.secondary", letterSpacing: 1 }}>
-            This Month So Far
-          </Typography>
-          <Grid container spacing={1.5} sx={{ mb: 2, mt: 0.5 }}>
-            <Grid size={4}>
-              <Typography variant="caption" color="text.secondary">
-                Collected
-              </Typography>
-              <Typography variant="h6" sx={{ fontWeight: 700, color: GREEN }}>
-                ₹{collectedMonth}
-              </Typography>
-            </Grid>
-            <Grid size={4}>
-              <Typography variant="caption" color="text.secondary">
-                Expenses
-              </Typography>
-              <Typography variant="h6" sx={{ fontWeight: 700, color: ORANGE }}>
-                ₹{expensesMonth}
-              </Typography>
-            </Grid>
-            <Grid size={4}>
-              <Typography variant="caption" color="text.secondary">
-                Net
-              </Typography>
-              <Typography variant="h6" sx={{ fontWeight: 700 }} color={netMonth >= 0 ? "success.main" : "error.main"}>
-                ₹{netMonth}
-              </Typography>
-            </Grid>
-          </Grid>
-
-          <Box sx={{ display: "flex", height: 10, borderRadius: 5, overflow: "hidden", bgcolor: "grey.100" }}>
-            <Box sx={{ width: `${collectedSharePct}%`, bgcolor: GREEN }} />
-            <Box sx={{ width: `${100 - collectedSharePct}%`, bgcolor: ORANGE }} />
-          </Box>
-          <Stack direction="row" spacing={2.5} sx={{ mt: 1 }}>
+          <Stack direction="row" spacing={2.5}>
             <Stack direction="row" spacing={0.75} sx={{ alignItems: "center" }}>
               <Box sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: GREEN }} />
               <Typography variant="caption" color="text.secondary">
