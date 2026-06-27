@@ -7,17 +7,18 @@ import CardContent from "@mui/material/CardContent";
 import Typography from "@mui/material/Typography";
 import Stack from "@mui/material/Stack";
 import Avatar from "@mui/material/Avatar";
-import Chip from "@mui/material/Chip";
 import Fab from "@mui/material/Fab";
 import AddIcon from "@mui/icons-material/Add";
 import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
 import { alpha } from "@mui/material/styles";
 import AddExpenseSheet from "@/components/AddExpenseSheet";
 import ExpenseDetailSheet from "@/components/ExpenseDetailSheet";
+import PeriodSelect from "@/components/PeriodSelect";
 import { getExpenseCategory } from "@/lib/expenseCategories";
 import { useAppStore } from "@/lib/store";
 import { Expense } from "@/lib/types";
-import { isSameMonth } from "@/lib/calc";
+import { isWithinRange } from "@/lib/calc";
+import { DashboardPeriod, getPeriodRange } from "@/lib/dashboardPeriod";
 
 const PRIMARY = "#00658F";
 
@@ -26,14 +27,14 @@ export default function ExpensesPage() {
   const [addOpen, setAddOpen] = useState(false);
   const [viewingExpense, setViewingExpense] = useState<Expense | null>(null);
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
+  const [period, setPeriod] = useState<DashboardPeriod>("today");
 
-  const now = new Date();
-  const monthExpenses = expenses
-    .filter((e) => isSameMonth(e.expenseDate, now))
+  const { start, end } = getPeriodRange(period);
+  const periodExpenses = expenses
+    .filter((e) => isWithinRange(e.expenseDate, start, end))
     .sort((a, b) => new Date(b.expenseDate).getTime() - new Date(a.expenseDate).getTime());
 
-  const total = monthExpenses.reduce((sum, e) => sum + e.amount, 0);
-  const monthLabel = now.toLocaleDateString("en-IN", { month: "long", year: "numeric", timeZone: "Asia/Kolkata" });
+  const total = periodExpenses.reduce((sum, e) => sum + e.amount, 0);
 
   const handleEdit = (expense: Expense) => {
     setViewingExpense(null);
@@ -52,12 +53,11 @@ export default function ExpensesPage() {
 
   return (
     <>
-      <Stack direction="row" sx={{ justifyContent: "space-between", alignItems: "flex-start", mb: 2.5 }}>
-        <Typography variant="h5" sx={{ fontWeight: 700 }}>
-          Expenses
-        </Typography>
-        <Chip label={monthLabel} size="small" variant="outlined" />
-      </Stack>
+      <Typography variant="h5" sx={{ fontWeight: 700, mb: 2.5 }}>
+        Expenses
+      </Typography>
+
+      <PeriodSelect value={period} onChange={setPeriod} />
 
       <Card
         variant="outlined"
@@ -71,7 +71,7 @@ export default function ExpensesPage() {
               </Avatar>
               <Box>
                 <Typography variant="caption" color="text.secondary">
-                  Total this month
+                  Total
                 </Typography>
                 <Typography variant="h5" sx={{ fontWeight: 700, color: PRIMARY }}>
                   ₹{total}
@@ -83,15 +83,15 @@ export default function ExpensesPage() {
       </Card>
 
       <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
-        This Month&apos;s Expenses
+        Expenses
       </Typography>
       <Stack spacing={1.5}>
-        {monthExpenses.length === 0 && (
+        {periodExpenses.length === 0 && (
           <Typography variant="body2" color="text.secondary">
-            No expenses recorded this month yet.
+            No expenses recorded in this range yet.
           </Typography>
         )}
-        {monthExpenses.map((e) => {
+        {periodExpenses.map((e) => {
           const cat = getExpenseCategory(e.title);
           return (
             <Card key={e.id} onClick={() => setViewingExpense(e)} sx={{ cursor: "pointer" }}>

@@ -10,8 +10,6 @@ import Stack from "@mui/material/Stack";
 import Avatar from "@mui/material/Avatar";
 import Divider from "@mui/material/Divider";
 import CircularProgress from "@mui/material/CircularProgress";
-import Select, { SelectChangeEvent } from "@mui/material/Select";
-import MenuItem from "@mui/material/MenuItem";
 import { alpha } from "@mui/material/styles";
 import LocalParkingIcon from "@mui/icons-material/LocalParking";
 import LoginIcon from "@mui/icons-material/Login";
@@ -21,35 +19,19 @@ import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
 import LocalAtmIcon from "@mui/icons-material/LocalAtm";
 import CreditCardIcon from "@mui/icons-material/CreditCard";
 import VehicleIcon from "@/components/VehicleIcon";
+import PeriodSelect from "@/components/PeriodSelect";
 import { useAppStore } from "@/lib/store";
 import { isWithinRange } from "@/lib/calc";
 import { VEHICLE_COLORS } from "@/lib/colors";
-import dayjs from "@/lib/dayjsConfig";
+import { DashboardPeriod, PERIOD_LABELS, getPeriodRange } from "@/lib/dashboardPeriod";
 
 const GREEN = "#2E7D32";
 const ORANGE = "#E65100";
 
-type DashboardPeriod = "today" | "week" | "month";
-
-const PERIOD_LABELS: Record<DashboardPeriod, string> = {
-  today: "Today",
-  week: "Last 7 Days",
-  month: "This Month",
-};
-
 export default function HomePage() {
   const { sessions, expenses, vehicleTypes, memberPayments } = useAppStore();
   const [period, setPeriod] = useState<DashboardPeriod>("today");
-
-  const now = dayjs.tz();
-  const rangeStart =
-    period === "today"
-      ? now.startOf("day")
-      : period === "week"
-        ? now.subtract(6, "day").startOf("day")
-        : now.startOf("month");
-  const start = rangeStart.toDate();
-  const end = now.toDate();
+  const { start, end } = getPeriodRange(period);
 
   const currentlyParked = sessions.filter((s) => s.status === "parked").length;
   const entered = sessions.filter((s) => isWithinRange(s.entryTime, start, end)).length;
@@ -110,21 +92,7 @@ export default function HomePage() {
 
   return (
     <>
-      <Stack direction="row" sx={{ justifyContent: "space-between", alignItems: "center", mb: 2 }}>
-        <Typography variant="body2" color="text.secondary">
-          Showing
-        </Typography>
-        <Select
-          value={period}
-          size="small"
-          onChange={(e: SelectChangeEvent) => setPeriod(e.target.value as DashboardPeriod)}
-          sx={{ minWidth: 180 }}
-        >
-          <MenuItem value="today">Today</MenuItem>
-          <MenuItem value="week">Last 7 Days</MenuItem>
-          <MenuItem value="month">This Month</MenuItem>
-        </Select>
-      </Stack>
+      <PeriodSelect value={period} onChange={setPeriod} />
 
       <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
         Traffic
