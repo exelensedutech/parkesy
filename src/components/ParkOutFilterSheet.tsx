@@ -17,17 +17,15 @@ import AllInclusiveIcon from "@mui/icons-material/AllInclusive";
 import VehicleIcon from "./VehicleIcon";
 import { VehicleType } from "@/lib/types";
 import { VEHICLE_COLORS } from "@/lib/colors";
+import { useAppStore } from "@/lib/store";
+import { TranslationKey } from "@/lib/i18n";
 
 export type DurationFilter = "any" | 2 | 6 | 12 | 24;
 export type MemberFilter = "all" | "member" | "walkin";
 
-const DURATION_OPTIONS: { value: DurationFilter; label: string }[] = [
-  { value: "any", label: "Any duration" },
-  { value: 2, label: "Parked 2 hours or more" },
-  { value: 6, label: "Parked 6 hours or more" },
-  { value: 12, label: "Parked 12 hours or more" },
-  { value: 24, label: "Parked 24 hours or more" },
-];
+function vehicleTypeKey(name: string): TranslationKey {
+  return name === "Bike" ? "vehicleTypeBike" : name === "Cycle" ? "vehicleTypeCycle" : "vehicleTypeCar";
+}
 
 const ALL_COLOR = "#455A64";
 const MEMBER_COLOR = "#2E7D32";
@@ -67,12 +65,21 @@ export default function ParkOutFilterSheet({
   setMemberFilter: (v: MemberFilter) => void;
   onReset: () => void;
 }) {
+  const { t } = useAppStore();
   const selectedVehicleType = vehicleTypes.find((vt) => vt.id === typeFilter);
 
+  const DURATION_OPTIONS: { value: DurationFilter; label: string }[] = [
+    { value: "any", label: t("anyDuration") },
+    { value: 2, label: `${t("parkedPrefix")} 2 ${t("hoursOrMoreSuffix")}` },
+    { value: 6, label: `${t("parkedPrefix")} 6 ${t("hoursOrMoreSuffix")}` },
+    { value: 12, label: `${t("parkedPrefix")} 12 ${t("hoursOrMoreSuffix")}` },
+    { value: 24, label: `${t("parkedPrefix")} 24 ${t("hoursOrMoreSuffix")}` },
+  ];
+
   const memberOptions: { value: MemberFilter; label: string; icon: React.ReactNode; color: string }[] = [
-    { value: "all", label: "All", icon: <AllInclusiveIcon fontSize="small" />, color: ALL_COLOR },
-    { value: "member", label: "Members", icon: <CardMembershipIcon fontSize="small" />, color: MEMBER_COLOR },
-    { value: "walkin", label: "Walk-in", icon: <PersonIcon fontSize="small" />, color: WALKIN_COLOR },
+    { value: "all", label: t("allOption"), icon: <AllInclusiveIcon fontSize="small" />, color: ALL_COLOR },
+    { value: "member", label: t("membersOption"), icon: <CardMembershipIcon fontSize="small" />, color: MEMBER_COLOR },
+    { value: "walkin", label: t("walkInOption"), icon: <PersonIcon fontSize="small" />, color: WALKIN_COLOR },
   ];
   const selectedMemberOption = memberOptions.find((o) => o.value === memberFilter)!;
 
@@ -85,7 +92,7 @@ export default function ParkOutFilterSheet({
     >
       <Box sx={{ p: 3, pb: 4, height: "100%", display: "flex", flexDirection: "column" }}>
         <Stack direction="row" sx={{ justifyContent: "space-between", alignItems: "center", mb: 3 }}>
-          <Typography variant="h6">Filters</Typography>
+          <Typography variant="h6">{t("filtersTitle")}</Typography>
           <IconButton onClick={onClose}>
             <CloseIcon />
           </IconButton>
@@ -93,7 +100,7 @@ export default function ParkOutFilterSheet({
 
         <Box sx={{ flex: 1, overflowY: "auto" }}>
           <Typography variant="caption" color="text.secondary">
-            Vehicle Type
+            {t("vehicleType")}
           </Typography>
           <FormControl fullWidth sx={{ mt: 0.5, mb: 3 }}>
             <Select
@@ -104,26 +111,26 @@ export default function ParkOutFilterSheet({
                   <IconRow
                     icon={<VehicleIcon name={selectedVehicleType.name} />}
                     color={VEHICLE_COLORS[selectedVehicleType.name]}
-                    label={selectedVehicleType.name}
+                    label={t(vehicleTypeKey(selectedVehicleType.name))}
                   />
                 ) : (
-                  <IconRow icon={<AllInclusiveIcon fontSize="small" />} color={ALL_COLOR} label="All" />
+                  <IconRow icon={<AllInclusiveIcon fontSize="small" />} color={ALL_COLOR} label={t("allOption")} />
                 )
               }
             >
               <MenuItem value="all">
-                <IconRow icon={<AllInclusiveIcon fontSize="small" />} color={ALL_COLOR} label="All" />
+                <IconRow icon={<AllInclusiveIcon fontSize="small" />} color={ALL_COLOR} label={t("allOption")} />
               </MenuItem>
               {vehicleTypes.map((vt) => (
                 <MenuItem key={vt.id} value={vt.id}>
-                  <IconRow icon={<VehicleIcon name={vt.name} />} color={VEHICLE_COLORS[vt.name]} label={vt.name} />
+                  <IconRow icon={<VehicleIcon name={vt.name} />} color={VEHICLE_COLORS[vt.name]} label={t(vehicleTypeKey(vt.name))} />
                 </MenuItem>
               ))}
             </Select>
           </FormControl>
 
           <Typography variant="caption" color="text.secondary">
-            Duration
+            {t("durationLabel")}
           </Typography>
           <FormControl fullWidth sx={{ mt: 0.5, mb: 3 }}>
             <Select
@@ -141,7 +148,7 @@ export default function ParkOutFilterSheet({
           </FormControl>
 
           <Typography variant="caption" color="text.secondary">
-            Member Type
+            {t("memberTypeLabel")}
           </Typography>
           <FormControl fullWidth sx={{ mt: 0.5, mb: 3 }}>
             <Select
@@ -162,10 +169,10 @@ export default function ParkOutFilterSheet({
 
         <Stack direction="row" spacing={1.5} sx={{ mt: 2 }}>
           <Button variant="outlined" onClick={onReset} sx={{ flex: 1 }}>
-            Reset
+            {t("resetBtn")}
           </Button>
           <Button variant="contained" onClick={onClose} sx={{ flex: 2 }}>
-            Show Results
+            {t("showResultsBtn")}
           </Button>
         </Stack>
       </Box>

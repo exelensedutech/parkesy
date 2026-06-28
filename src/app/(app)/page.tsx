@@ -27,11 +27,16 @@ import ParkExitConfirmationDialog, { ParkExitConfirmation } from "@/components/P
 import VehicleIcon from "@/components/VehicleIcon";
 import { useAppStore } from "@/lib/store";
 import { ParkingSession } from "@/lib/types";
+import { TranslationKey } from "@/lib/i18n";
 import { durationHours, formatDuration } from "@/lib/calc";
 import { VEHICLE_COLORS } from "@/lib/colors";
 
+function vehicleTypeKey(name: string): TranslationKey {
+  return name === "Bike" ? "vehicleTypeBike" : name === "Cycle" ? "vehicleTypeCycle" : "vehicleTypeCar";
+}
+
 export default function ParkPage() {
-  const { sessions, vehicleTypes } = useAppStore();
+  const { sessions, vehicleTypes, t, language } = useAppStore();
   const [tab, setTab] = useState<"in" | "out">("in");
   const [search, setSearch] = useState("");
   const [filterOpen, setFilterOpen] = useState(false);
@@ -78,7 +83,7 @@ export default function ParkPage() {
           }}
         >
           <LoginIcon sx={{ mr: 1 }} fontSize="small" />
-          Check In
+          {t("checkInTab")}
         </ToggleButton>
         <ToggleButton
           value="out"
@@ -92,7 +97,7 @@ export default function ParkPage() {
           }}
         >
           <LogoutIcon sx={{ mr: 1 }} fontSize="small" />
-          Check Out
+          {t("checkOutTab")}
         </ToggleButton>
       </ToggleButtonGroup>
 
@@ -101,7 +106,7 @@ export default function ParkPage() {
       {tab === "out" && (
         <Box>
           <TextField
-            placeholder="Search by vehicle number"
+            placeholder={t("searchByVehicleNumber")}
             fullWidth
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -129,13 +134,13 @@ export default function ParkPage() {
           <Stack spacing={1.5}>
             {parked.length === 0 && (
               <Typography variant="body2" color="text.secondary">
-                No parked vehicles match your search/filters.
+                {t("noParkedVehiclesMatch")}
               </Typography>
             )}
             {parked.map((session) => {
               const vehicleType = vehicleTypes.find((vt) => vt.id === session.vehicleTypeId)!;
               const color = VEHICLE_COLORS[vehicleType.name];
-              const parkedAt = new Date(session.entryTime).toLocaleString("en-IN", {
+              const parkedAt = new Date(session.entryTime).toLocaleString(language === "ta" ? "ta-IN" : "en-IN", {
                 day: "numeric",
                 month: "short",
                 hour: "numeric",
@@ -151,9 +156,9 @@ export default function ParkPage() {
                           <VehicleIcon name={vehicleType.name} />
                         </Avatar>
                         <Box>
-                          <Typography variant="subtitle1">{vehicleType.name}</Typography>
+                          <Typography variant="subtitle1">{t(vehicleTypeKey(vehicleType.name))}</Typography>
                           <Typography variant="body2" color="text.secondary">
-                            Parked {parkedAt}
+                            {t("parkedAtPrefix")} {parkedAt}
                             {session.vehicleNumber ? ` · ${session.vehicleNumber}` : ""}
                           </Typography>
                         </Box>

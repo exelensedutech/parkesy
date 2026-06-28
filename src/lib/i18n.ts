@@ -264,6 +264,26 @@ const en = {
   chargeAsRegularEntry: "Charge as a regular entry",
   expiringSoon: "Expiring soon",
   notMatchedTapToCheck: "Not matched to a member · tap to check matches",
+
+  // Park Out filters
+  filtersTitle: "Filters",
+  allOption: "All",
+  membersOption: "Members",
+  walkInOption: "Walk-in",
+  memberTypeLabel: "Member Type",
+  durationLabel: "Duration",
+  anyDuration: "Any duration",
+  parkedPrefix: "Parked",
+  hoursOrMoreSuffix: "hours or more",
+  resetBtn: "Reset",
+  showResultsBtn: "Show Results",
+
+  // Park page (Check In/Out toggle + Check Out list)
+  checkInTab: "Check In",
+  checkOutTab: "Check Out",
+  searchByVehicleNumber: "Search by vehicle number",
+  noParkedVehiclesMatch: "No parked vehicles match your search/filters.",
+  parkedAtPrefix: "Parked",
 } as const;
 
 export type TranslationKey = keyof typeof en;
@@ -527,6 +547,25 @@ const ta: Record<TranslationKey, string> = {
   chargeAsRegularEntry: "வழக்கமான நுழைவாக கட்டணம் வசூலி",
   expiringSoon: "விரைவில் காலாவதியாகும்",
   notMatchedTapToCheck: "உறுப்பினருடன் பொருந்தவில்லை · பொருத்தங்களைப் பார்க்க தட்டவும்",
+
+  // Park Out filters
+  filtersTitle: "வடிகட்டிகள்",
+  allOption: "அனைத்தும்",
+  membersOption: "உறுப்பினர்கள்",
+  walkInOption: "வாக்-இன்",
+  memberTypeLabel: "உறுப்பினர் வகை",
+  durationLabel: "கால அளவு",
+  anyDuration: "எந்த காலமும்",
+  parkedPrefix: "நிறுத்தப்பட்டது",
+  hoursOrMoreSuffix: "மணி நேரம் அல்லது அதற்கு மேல்",
+  resetBtn: "மீட்டமை",
+  showResultsBtn: "முடிவுகளைக் காட்டு",
+
+  checkInTab: "செக் இன்",
+  checkOutTab: "செக் அவுட்",
+  searchByVehicleNumber: "வாகன எண் மூலம் தேடு",
+  noParkedVehiclesMatch: "உங்கள் தேடல்/வடிகட்டிகளுக்கு பொருந்தும் நிறுத்தப்பட்ட வாகனங்கள் இல்லை.",
+  parkedAtPrefix: "நிறுத்தப்பட்டது",
 };
 
 const dictionaries: Record<Language, Record<TranslationKey, string>> = { en, ta };
