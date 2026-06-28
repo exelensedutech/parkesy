@@ -380,7 +380,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       setAuthChecked(true);
     }
 
-    const { data: subscription } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: subscription } = supabase.auth.onAuthStateChange((event, session) => {
+      // TOKEN_REFRESHED fires automatically roughly every hour during normal
+      // use — it's the same user and business, just a renewed JWT. Treating
+      // it like a fresh sign-in would re-fetch everything and show the
+      // full-screen "checking session" spinner over whatever the attendant
+      // was doing mid-use, for no reason.
+      if (event === "TOKEN_REFRESHED") return;
       void loadForSession(session?.user.id ?? null);
     });
 
