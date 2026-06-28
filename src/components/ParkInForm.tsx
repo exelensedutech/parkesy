@@ -48,6 +48,7 @@ export default function ParkInForm() {
     uploadPhoto,
     vehicleNumberCaptureMode,
     collectAtCheckIn,
+    language,
     t,
   } = useAppStore();
   const isLast4Mode = vehicleNumberCaptureMode === "last4";
@@ -268,7 +269,7 @@ export default function ParkInForm() {
             >
               Member{activeMember.customerName ? ` — ${activeMember.customerName}` : ""} ({activeMember.vehicleNumber}
               ) · valid till{" "}
-              {new Date(activeMember.expiryDate).toLocaleDateString("en-IN", {
+              {new Date(activeMember.expiryDate).toLocaleDateString(language === "ta" ? "ta-IN" : "en-IN", {
                 day: "numeric",
                 month: "short",
                 timeZone: "Asia/Kolkata",
@@ -425,7 +426,7 @@ export default function ParkInForm() {
                           <Typography variant="subtitle1">{m.vehicleNumber}</Typography>
                           <Typography variant="body2" color="text.secondary">
                             {m.customerName ? `${m.customerName} · ` : ""}valid till{" "}
-                            {expiry.toLocaleDateString("en-IN", {
+                            {expiry.toLocaleDateString(language === "ta" ? "ta-IN" : "en-IN", {
                               day: "numeric",
                               month: "short",
                               timeZone: "Asia/Kolkata",

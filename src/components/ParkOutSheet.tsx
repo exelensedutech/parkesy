@@ -31,6 +31,10 @@ import { calculateAmount, durationHours, formatDuration } from "@/lib/calc";
 import { ParkExitConfirmation } from "./ParkExitConfirmationDialog";
 import { BOTTOM_SHEET_PAPER_SX } from "@/lib/sheetStyles";
 
+function vehicleTypeKey(name: string): "vehicleTypeBike" | "vehicleTypeCycle" | "vehicleTypeCar" {
+  return name === "Bike" ? "vehicleTypeBike" : name === "Cycle" ? "vehicleTypeCycle" : "vehicleTypeCar";
+}
+
 export default function ParkOutSheet({
   session,
   onClose,
@@ -40,7 +44,7 @@ export default function ParkOutSheet({
   onClose: () => void;
   onCompleted: (confirmation: ParkExitConfirmation) => void;
 }) {
-  const { vehicleTypes, completeSession, updateSessionVehicleNumber, getSignedPhotoUrl } = useAppStore();
+  const { vehicleTypes, completeSession, updateSessionVehicleNumber, getSignedPhotoUrl, language, t } = useAppStore();
   const [paymentMode, setPaymentMode] = useState<PaymentMode>("cash");
   const [hours, setHours] = useState(0);
   const [completing, setCompleting] = useState(false);
@@ -146,7 +150,7 @@ export default function ParkOutSheet({
                 <ListItemIcon>
                   <EditIcon fontSize="small" />
                 </ListItemIcon>
-                <ListItemText>Edit vehicle number</ListItemText>
+                <ListItemText>{t("editVehicleNumber")}</ListItemText>
               </MenuItem>
             </Menu>
           </Stack>
@@ -157,7 +161,7 @@ export default function ParkOutSheet({
             <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
               <TextField
                 size="small"
-                label="Vehicle number"
+                label={t("vehicleNumber")}
                 fullWidth
                 autoFocus
                 value={numberDraft}
@@ -172,13 +176,13 @@ export default function ParkOutSheet({
             </Stack>
           ) : (
             <Typography variant="body2" color="text.secondary">
-              {vehicleType.name}
+              {t(vehicleTypeKey(vehicleType.name))}
               {displayNumber ? ` · ${displayNumber}` : ""}
             </Typography>
           )}
           <Typography variant="body2" color="text.secondary">
-            In:{" "}
-            {new Date(session.entryTime).toLocaleString("en-IN", {
+            {t("inLabel")}:{" "}
+            {new Date(session.entryTime).toLocaleString(language === "ta" ? "ta-IN" : "en-IN", {
               day: "numeric",
               month: "short",
               hour: "numeric",
@@ -187,7 +191,7 @@ export default function ParkOutSheet({
             })}
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            Parked for {formatDuration(hours)}
+            {t("parkedFor")} {formatDuration(hours)}
           </Typography>
         </Stack>
 
@@ -195,25 +199,25 @@ export default function ParkOutSheet({
 
         {isMemberVisit ? (
           <Alert icon={<CardMembershipIcon fontSize="inherit" />} severity="success" sx={{ mb: 3 }}>
-            Member visit — no charge
+            {t("memberVisitNoCharge")}
           </Alert>
         ) : (
           <>
             <Stack direction="row" sx={{ justifyContent: "space-between", mb: 0.5 }}>
               <Typography variant="body2" color="text.secondary">
-                Total cost
+                {t("totalCost")}
               </Typography>
               <Typography variant="body2">₹{totalAmount}</Typography>
             </Stack>
             <Stack direction="row" sx={{ justifyContent: "space-between", mb: 1.5 }}>
               <Typography variant="body2" color="text.secondary">
-                Already paid at entry
+                {t("alreadyPaidAtEntry")}
               </Typography>
               <Typography variant="body2">₹{session.amountPaidAtEntry}</Typography>
             </Stack>
 
             <Typography variant="overline" color={isRefund ? "error" : "text.secondary"}>
-              {isRefund ? "Refund to customer" : "Balance due"}
+              {isRefund ? t("refundToCustomer") : t("balanceDue")}
             </Typography>
             <Typography variant="h3" sx={{ mb: 3 }} color={isRefund ? "error.main" : "text.primary"}>
               {isRefund ? "-" : ""}₹{settlementAmount}
@@ -224,7 +228,7 @@ export default function ParkOutSheet({
         {settlementAmount > 0 && (
           <>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-              {isRefund ? "Refund via" : "Payment mode"}
+              {isRefund ? t("refundVia") : t("paymentMode")}
             </Typography>
             <PaymentModeToggle value={paymentMode} onChange={setPaymentMode} sx={{ mb: 3 }} />
           </>
@@ -232,12 +236,12 @@ export default function ParkOutSheet({
 
         <Button variant="contained" size="large" fullWidth disabled={completing} onClick={handleComplete}>
           {completing
-            ? "Marking Out…"
+            ? t("markingOut")
             : isRefund
-              ? "Refund & Mark Out"
+              ? t("refundAndMarkOut")
               : settlementAmount > 0
-                ? "Collect Balance & Mark Out"
-                : "Mark Vehicle Out"}
+                ? t("collectBalanceAndMarkOut")
+                : t("markVehicleOut")}
         </Button>
       </Box>
 
