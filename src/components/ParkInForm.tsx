@@ -243,7 +243,7 @@ export default function ParkInForm() {
                 onClick={() => setPreviewOpen(true)}
               />
               <Typography variant="body2" color="text.secondary">
-                Vehicle photo captured — tap to view
+                {t("vehiclePhotoTapToView")}
               </Typography>
             </Stack>
           )}
@@ -255,8 +255,7 @@ export default function ParkInForm() {
               sx={{ mt: 1.5, cursor: "pointer" }}
               onClick={() => setMemberPickerOpen(true)}
             >
-              {matchingMembers.length} {selectedVehicleType.name.toLowerCase()}s found with this number — tap to
-              confirm which one
+              {matchingMembers.length} {t(vehicleTypeKey(selectedVehicleType.name))} {t("vehiclesFoundTapToConfirm")}
             </Alert>
           )}
 
@@ -267,14 +266,14 @@ export default function ParkInForm() {
               sx={{ mt: 1.5, cursor: matchingMembers.length > 1 ? "pointer" : undefined }}
               onClick={matchingMembers.length > 1 ? () => setMemberPickerOpen(true) : undefined}
             >
-              Member{activeMember.customerName ? ` — ${activeMember.customerName}` : ""} ({activeMember.vehicleNumber}
-              ) · valid till{" "}
+              {t("memberLabel")}{activeMember.customerName ? ` — ${activeMember.customerName}` : ""} (
+              {activeMember.vehicleNumber}) · {t("validTill")}{" "}
               {new Date(activeMember.expiryDate).toLocaleDateString(language === "ta" ? "ta-IN" : "en-IN", {
                 day: "numeric",
                 month: "short",
                 timeZone: "Asia/Kolkata",
               })}{" "}
-              · Entry is free{matchingMembers.length > 1 ? " · tap to change" : ""}
+              · {t("entryIsFree")}{matchingMembers.length > 1 ? ` · ${t("tapToChange")}` : ""}
             </Alert>
           )}
 
@@ -285,7 +284,7 @@ export default function ParkInForm() {
               sx={{ display: "block", mt: 1, cursor: "pointer" }}
               onClick={() => setMemberPickerOpen(true)}
             >
-              Not matched to a member · tap to check matches
+              {t("notMatchedTapToCheck")}
             </Typography>
           )}
         </CardContent>
@@ -392,7 +391,7 @@ export default function ParkInForm() {
         <Box sx={{ pt: 1.5, pb: 1 }}>
           <SheetHandle />
           <Typography variant="h6" sx={{ px: 3, mb: 1.5 }}>
-            Which vehicle is this?
+            {t("whichVehicleIsThis")}
           </Typography>
           <Stack spacing={1.5} sx={{ px: 2, mb: 1.5 }}>
             {matchingMembers.map((m) => {
@@ -425,7 +424,7 @@ export default function ParkInForm() {
                         <Box>
                           <Typography variant="subtitle1">{m.vehicleNumber}</Typography>
                           <Typography variant="body2" color="text.secondary">
-                            {m.customerName ? `${m.customerName} · ` : ""}valid till{" "}
+                            {m.customerName ? `${m.customerName} · ` : ""}{t("validTill")}{" "}
                             {expiry.toLocaleDateString(language === "ta" ? "ta-IN" : "en-IN", {
                               day: "numeric",
                               month: "short",
@@ -434,7 +433,7 @@ export default function ParkInForm() {
                           </Typography>
                         </Box>
                       </Stack>
-                      {expiringSoon && <Chip label="Expiring soon" size="small" color="warning" />}
+                      {expiringSoon && <Chip label={t("expiringSoon")} size="small" color="warning" />}
                     </Stack>
                   </CardContent>
                 </Card>
@@ -449,7 +448,7 @@ export default function ParkInForm() {
               setMemberPickerOpen(false);
             }}
           >
-            <ListItemText primary="None of these" secondary="Charge as a regular entry" />
+            <ListItemText primary={t("noneOfThese")} secondary={t("chargeAsRegularEntry")} />
           </ListItemButton>
         </Box>
       </Drawer>
@@ -460,10 +459,10 @@ export default function ParkInForm() {
         </DialogContent>
         <DialogActions sx={{ justifyContent: "space-between", px: 2, py: 1.5 }}>
           <Button color="error" startIcon={<DeleteIcon />} onClick={handleDeletePhoto}>
-            Delete
+            {t("delete")}
           </Button>
           <Button startIcon={<CameraAltIcon />} onClick={handleRetakePhoto}>
-            Retake
+            {t("retake")}
           </Button>
         </DialogActions>
       </Dialog>

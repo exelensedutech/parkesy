@@ -442,11 +442,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         const { data, error } = await supabase.auth.signUp({ email, password });
         if (error) {
           return error.message.toLowerCase().includes("already registered")
-            ? "This phone number is already registered."
+            ? translate(language, "phoneAlreadyRegistered")
             : error.message;
         }
         if (!data.session) {
-          return "Could not create account — please try again.";
+          return translate(language, "accountCreationFailed");
         }
         const { error: rpcError } = await supabase.rpc("complete_signup", {
           p_name: name.trim(),

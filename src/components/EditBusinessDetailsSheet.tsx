@@ -14,7 +14,7 @@ import { Address } from "@/lib/types";
 import { BOTTOM_SHEET_PAPER_SX } from "@/lib/sheetStyles";
 
 export default function EditBusinessDetailsSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const { businessName, businessAddress, businessPhone, setBusinessDetails } = useAppStore();
+  const { businessName, businessAddress, businessPhone, setBusinessDetails, t } = useAppStore();
   const [name, setName] = useState(businessName);
   const [address, setAddress] = useState<Address>(businessAddress);
   const [phone, setPhone] = useState(businessPhone);
@@ -37,11 +37,11 @@ export default function EditBusinessDetailsSheet({ open, onClose }: { open: bool
       <Box sx={{ p: 3, pb: 4 }}>
         <SheetHandle />
         <Typography variant="h6" sx={{ mb: 2.5 }}>
-          Business Details
+          {t("businessDetailsTitle")}
         </Typography>
 
         <TextField
-          label="Business / stand name"
+          label={t("businessStandName")}
           fullWidth
           autoFocus
           value={name}
@@ -49,7 +49,7 @@ export default function EditBusinessDetailsSheet({ open, onClose }: { open: bool
           sx={{ mb: 2 }}
         />
         <TextField
-          label="Phone number"
+          label={t("phoneNumberLabel")}
           fullWidth
           value={phone}
           onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
@@ -58,11 +58,11 @@ export default function EditBusinessDetailsSheet({ open, onClose }: { open: bool
 
         <Divider sx={{ mb: 2 }} />
         <Typography variant="subtitle2" sx={{ mb: 1.5 }}>
-          Address
+          {t("address")}
         </Typography>
 
         <TextField
-          label="Door No & Street"
+          label={t("doorNoStreet")}
           fullWidth
           multiline
           minRows={2}
@@ -73,7 +73,7 @@ export default function EditBusinessDetailsSheet({ open, onClose }: { open: bool
         <Grid container spacing={1.5} sx={{ mb: 2 }}>
           <Grid size={6}>
             <TextField
-              label="City"
+              label={t("city")}
               fullWidth
               value={address.city ?? ""}
               onChange={(e) => setAddress((prev) => ({ ...prev, city: e.target.value }))}
@@ -81,7 +81,7 @@ export default function EditBusinessDetailsSheet({ open, onClose }: { open: bool
           </Grid>
           <Grid size={6}>
             <TextField
-              label="Pincode"
+              label={t("pincode")}
               fullWidth
               value={address.pincode ?? ""}
               onChange={(e) => setAddress((prev) => ({ ...prev, pincode: e.target.value.replace(/\D/g, "").slice(0, 6) }))}
@@ -89,7 +89,7 @@ export default function EditBusinessDetailsSheet({ open, onClose }: { open: bool
           </Grid>
         </Grid>
         <TextField
-          label="State"
+          label={t("state")}
           fullWidth
           value={address.state ?? ""}
           onChange={(e) => setAddress((prev) => ({ ...prev, state: e.target.value }))}
@@ -97,7 +97,7 @@ export default function EditBusinessDetailsSheet({ open, onClose }: { open: bool
         />
 
         <Button variant="contained" size="large" fullWidth onClick={handleSave}>
-          Save
+          {t("save")}
         </Button>
       </Box>
     </Drawer>

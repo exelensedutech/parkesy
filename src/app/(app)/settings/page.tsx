@@ -17,11 +17,16 @@ import { SettingsRow } from "@/components/SettingsRow";
 import { useAppStore } from "@/lib/store";
 import { VehicleType } from "@/lib/types";
 import { VEHICLE_COLORS } from "@/lib/colors";
+import { TranslationKey } from "@/lib/i18n";
 
 const PRIMARY = "#00658F";
 
+function vehicleTypeKey(name: string): TranslationKey {
+  return name === "Bike" ? "vehicleTypeBike" : name === "Cycle" ? "vehicleTypeCycle" : "vehicleTypeCar";
+}
+
 export default function SettingsPage() {
-  const { role, businessName, businessPhone, vehicleTypes, members, teamInvites } = useAppStore();
+  const { role, businessName, businessPhone, vehicleTypes, members, teamInvites, t } = useAppStore();
   const router = useRouter();
   const [editingDetails, setEditingDetails] = useState(false);
   const [editingVehicleType, setEditingVehicleType] = useState<VehicleType | null>(null);
@@ -32,7 +37,7 @@ export default function SettingsPage() {
   if (role !== "admin") {
     return (
       <Typography variant="body1" sx={{ mt: 4 }} align="center" color="text.secondary">
-        Settings are only visible to the Admin.
+        {t("settingsAdminOnly")}
       </Typography>
     );
   }
@@ -40,24 +45,24 @@ export default function SettingsPage() {
   return (
     <>
       <Typography variant="h5" sx={{ fontWeight: 700, mb: 2.5 }}>
-        Settings
+        {t("settingsTitle")}
       </Typography>
 
       <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
-        Business
+        {t("businessSection")}
       </Typography>
       <Stack spacing={1.5} sx={{ mb: 2.5 }}>
         <SettingsRow
           icon={<StoreIcon />}
           color={PRIMARY}
-          title="Business Details"
+          title={t("businessDetailsTitle")}
           subtitle={businessPhone ? `${businessName} · ${businessPhone}` : businessName}
           onClick={() => setEditingDetails(true)}
         />
       </Stack>
 
       <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
-        Vehicle Types
+        {t("vehicleTypesSection")}
       </Typography>
       <Stack spacing={1.5} sx={{ mb: 2.5 }}>
         {vehicleTypes.map((vt) => {
@@ -66,13 +71,13 @@ export default function SettingsPage() {
           const rateSummary =
             slab1 && slab2
               ? `₹${slab1.amount} first ${slab1.toHour}h, then ₹${slab2.amount}/${slab2.unitHours ?? 1}h`
-              : "Tap to configure";
+              : t("tapToConfigure");
           return (
             <SettingsRow
               key={vt.id}
               icon={<VehicleIcon name={vt.name} />}
               color={VEHICLE_COLORS[vt.name]}
-              title={vt.name}
+              title={t(vehicleTypeKey(vt.name))}
               subtitle={`${vt.totalSlots} slots · ${rateSummary}`}
               onClick={() => setEditingVehicleType(vt)}
             />
@@ -81,53 +86,53 @@ export default function SettingsPage() {
       </Stack>
 
       <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
-        Memberships
+        {t("membershipsSection")}
       </Typography>
       <Stack spacing={1.5} sx={{ mb: 2.5 }}>
         <SettingsRow
           icon={<CardMembershipIcon />}
           color={PRIMARY}
-          title="Members"
-          subtitle={`${activeMemberCount} active membership${activeMemberCount === 1 ? "" : "s"}`}
+          title={t("membersRowTitle")}
+          subtitle={`${activeMemberCount} ${activeMemberCount === 1 ? t("activeMembershipCount") : t("activeMembershipCountPlural")}`}
           onClick={() => router.push("/settings/members")}
         />
       </Stack>
 
       <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
-        Team
+        {t("teamSection")}
       </Typography>
       <Stack spacing={1.5} sx={{ mb: 2.5 }}>
         <SettingsRow
           icon={<GroupIcon />}
           color={PRIMARY}
-          title="Team Members"
-          subtitle={`${teamInvites.length} invited`}
+          title={t("teamMembersRowTitle")}
+          subtitle={`${teamInvites.length} ${t("invitedCount")}`}
           onClick={() => router.push("/settings/team")}
         />
       </Stack>
 
       <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
-        Reports
+        {t("reportsSection")}
       </Typography>
       <Stack spacing={1.5} sx={{ mb: 2.5 }}>
         <SettingsRow
           icon={<AssessmentIcon />}
           color={PRIMARY}
-          title="Reports"
-          subtitle="Financial and operational insights"
+          title={t("reportsRowTitle")}
+          subtitle={t("reportsRowSubtitle")}
           onClick={() => router.push("/settings/reports")}
         />
       </Stack>
 
       <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
-        More Settings
+        {t("moreSettingsSection")}
       </Typography>
       <Stack spacing={1.5}>
         <SettingsRow
           icon={<TuneIcon />}
           color={PRIMARY}
-          title="Advanced Preferences"
-          subtitle="Vehicle number capture, check-in payment & more"
+          title={t("advancedPreferencesTitle")}
+          subtitle={t("advancedPreferencesSubtitle")}
           onClick={() => setAdvancedOpen(true)}
         />
       </Stack>

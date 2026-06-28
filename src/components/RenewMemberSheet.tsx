@@ -12,13 +12,13 @@ import MenuItem from "@mui/material/MenuItem";
 import { useAppStore } from "@/lib/store";
 import { Member, PaymentMode } from "@/lib/types";
 import { addMonths } from "@/lib/calc";
-import { MEMBERSHIP_DURATIONS, durationLabel, getMembershipPrice } from "@/lib/membership";
+import { MEMBERSHIP_DURATIONS, durationUnitKey, getMembershipPrice } from "@/lib/membership";
 import { BOTTOM_SHEET_PAPER_SX } from "@/lib/sheetStyles";
 import SheetHandle from "./SheetHandle";
 import PaymentModeToggle from "./PaymentModeToggle";
 
 export default function RenewMemberSheet({ member, onClose }: { member: Member | null; onClose: () => void }) {
-  const { vehicleTypes, renewMember } = useAppStore();
+  const { vehicleTypes, renewMember, language, t } = useAppStore();
   const [durationMonths, setDurationMonths] = useState(MEMBERSHIP_DURATIONS[0]);
   const [paymentMode, setPaymentMode] = useState<PaymentMode>("cash");
   const [renewing, setRenewing] = useState(false);
@@ -50,7 +50,7 @@ export default function RenewMemberSheet({ member, onClose }: { member: Member |
       <Box sx={{ p: 3, pb: 4 }}>
         <SheetHandle />
         <Typography variant="h6" gutterBottom>
-          Renew Membership
+          {t("renewMembershipTitle")}
         </Typography>
         <Stack spacing={0.5} sx={{ mb: 3 }}>
           <Typography variant="body2" color="text.secondary">
@@ -58,8 +58,8 @@ export default function RenewMemberSheet({ member, onClose }: { member: Member |
             {member.customerName ? ` · ${member.customerName}` : ""}
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            New expiry:{" "}
-            {new Date(newExpiry).toLocaleDateString("en-IN", {
+            {t("newExpiryLabel")}:{" "}
+            {new Date(newExpiry).toLocaleDateString(language === "ta" ? "ta-IN" : "en-IN", {
               day: "numeric",
               month: "short",
               year: "numeric",
@@ -69,32 +69,32 @@ export default function RenewMemberSheet({ member, onClose }: { member: Member |
         </Stack>
 
         <Typography variant="caption" color="text.secondary">
-          Membership Duration
+          {t("membershipDurationLabel")}
         </Typography>
         <FormControl fullWidth sx={{ mt: 0.5, mb: 2 }}>
           <Select value={durationMonths} onChange={(e: SelectChangeEvent<number>) => setDurationMonths(Number(e.target.value))}>
             {MEMBERSHIP_DURATIONS.map((d) => (
               <MenuItem key={d} value={d}>
-                {durationLabel(d)}
+                {d} {t(durationUnitKey(d))}
               </MenuItem>
             ))}
           </Select>
         </FormControl>
 
         <Typography variant="overline" color="text.secondary">
-          Renewal fee
+          {t("renewalFeeLabel")}
         </Typography>
         <Typography variant="h4" sx={{ mb: 3, fontWeight: 700 }}>
           ₹{amount}
         </Typography>
 
         <Typography variant="caption" color="text.secondary">
-          Payment mode
+          {t("paymentMode")}
         </Typography>
         <PaymentModeToggle value={paymentMode} onChange={setPaymentMode} sx={{ mt: 0.5, mb: 3 }} />
 
         <Button variant="contained" size="large" fullWidth disabled={renewing} onClick={handleRenew}>
-          {renewing ? "Renewing…" : "Collect & Renew"}
+          {renewing ? t("renewingEllipsis") : t("collectAndRenew")}
         </Button>
       </Box>
     </Drawer>

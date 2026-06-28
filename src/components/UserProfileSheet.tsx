@@ -20,7 +20,7 @@ import { Address, Language } from "@/lib/types";
 import { BOTTOM_SHEET_PAPER_SX } from "@/lib/sheetStyles";
 
 export default function UserProfileSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const { userName, userAddress, phone, role, language, setLanguage, updateUserProfile, logout } = useAppStore();
+  const { userName, userAddress, phone, role, language, setLanguage, updateUserProfile, logout, t } = useAppStore();
   const [name, setName] = useState(userName);
   const [address, setAddress] = useState<Address>(userAddress);
 
@@ -48,22 +48,22 @@ export default function UserProfileSheet({ open, onClose }: { open: boolean; onC
         <Stack direction="row" spacing={1.5} sx={{ alignItems: "center", mb: 2.5 }}>
           <Avatar sx={{ width: 44, height: 44 }}>{(userName || "?").charAt(0).toUpperCase()}</Avatar>
           <Box>
-            <Typography variant="h6">{userName || "Your Profile"}</Typography>
+            <Typography variant="h6">{userName || t("yourProfile")}</Typography>
             <Typography variant="caption" color="text.secondary">
-              {role === "admin" ? "Admin" : "Employee"} · {phone}
+              {role === "admin" ? t("admin") : t("employeeRole")} · {phone}
             </Typography>
           </Box>
         </Stack>
 
-        <TextField label="Name" fullWidth value={name} onChange={(e) => setName(e.target.value)} sx={{ mb: 2 }} />
+        <TextField label={t("name")} fullWidth value={name} onChange={(e) => setName(e.target.value)} sx={{ mb: 2 }} />
 
         <Divider sx={{ mb: 2 }} />
         <Typography variant="subtitle2" sx={{ mb: 1.5 }}>
-          Address
+          {t("address")}
         </Typography>
 
         <TextField
-          label="Door No & Street"
+          label={t("doorNoStreet")}
           fullWidth
           multiline
           minRows={2}
@@ -74,7 +74,7 @@ export default function UserProfileSheet({ open, onClose }: { open: boolean; onC
         <Grid container spacing={1.5} sx={{ mb: 2 }}>
           <Grid size={6}>
             <TextField
-              label="City"
+              label={t("city")}
               fullWidth
               value={address.city ?? ""}
               onChange={(e) => setAddress((prev) => ({ ...prev, city: e.target.value }))}
@@ -82,7 +82,7 @@ export default function UserProfileSheet({ open, onClose }: { open: boolean; onC
           </Grid>
           <Grid size={6}>
             <TextField
-              label="Pincode"
+              label={t("pincode")}
               fullWidth
               value={address.pincode ?? ""}
               onChange={(e) => setAddress((prev) => ({ ...prev, pincode: e.target.value.replace(/\D/g, "").slice(0, 6) }))}
@@ -90,7 +90,7 @@ export default function UserProfileSheet({ open, onClose }: { open: boolean; onC
           </Grid>
         </Grid>
         <TextField
-          label="State"
+          label={t("state")}
           fullWidth
           value={address.state ?? ""}
           onChange={(e) => setAddress((prev) => ({ ...prev, state: e.target.value }))}
@@ -99,7 +99,7 @@ export default function UserProfileSheet({ open, onClose }: { open: boolean; onC
 
         <Divider sx={{ mb: 2 }} />
         <Typography variant="caption" color="text.secondary">
-          Language
+          {t("languageLabel")}
         </Typography>
         <FormControl fullWidth sx={{ mt: 0.5, mb: 3 }}>
           <Select
@@ -112,10 +112,10 @@ export default function UserProfileSheet({ open, onClose }: { open: boolean; onC
         </FormControl>
 
         <Button variant="contained" size="large" fullWidth onClick={handleSave} sx={{ mb: 1.5 }}>
-          Save
+          {t("save")}
         </Button>
         <Button variant="outlined" color="error" size="large" fullWidth startIcon={<LogoutIcon />} onClick={handleLogout}>
-          Log Out
+          {t("logOut")}
         </Button>
       </Box>
     </Drawer>

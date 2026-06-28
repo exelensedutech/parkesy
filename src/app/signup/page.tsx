@@ -25,7 +25,7 @@ type Step = "phone" | "otp" | "password";
 
 export default function SignupPage() {
   const router = useRouter();
-  const { authChecked, isAuthenticated, signup } = useAppStore();
+  const { authChecked, isAuthenticated, signup, t } = useAppStore();
   const [step, setStep] = useState<Step>("phone");
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
@@ -72,7 +72,7 @@ export default function SignupPage() {
     if (hasInvite) {
       const { data: matchedRole } = await supabase.rpc("verify_invite_pin", { p_phone: phone, p_pin: code });
       if (!matchedRole) {
-        setOtpError("Incorrect PIN — check with your admin");
+        setOtpError(t("incorrectPin"));
         setOtp(EMPTY_4);
         return;
       }
@@ -89,11 +89,11 @@ export default function SignupPage() {
     const p = password.join("");
     const c = confirmPassword.join("");
     if (p.length !== 6 || c.length !== 6) {
-      setPasswordError("Enter and confirm a 6-digit password");
+      setPasswordError(t("enterConfirmPassword"));
       return;
     }
     if (p !== c) {
-      setPasswordError("Passwords don't match — try again");
+      setPasswordError(t("passwordsDontMatch"));
       setConfirmPassword(EMPTY_6);
       return;
     }
@@ -166,7 +166,7 @@ export default function SignupPage() {
           Parkesy
         </Typography>
         <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.8)", mt: 0.5 }}>
-          Create your account
+          {t("createYourAccount")}
         </Typography>
       </Box>
 
@@ -190,21 +190,21 @@ export default function SignupPage() {
           <Fade in={step === "phone"} unmountOnExit>
             <Box sx={{ display: step === "phone" ? "block" : "none" }}>
               <Typography variant="h6" sx={{ fontWeight: 600, mb: 0.5 }}>
-                Sign up
+                {t("signUpTitle")}
               </Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                Enter your name and mobile number to get started
+                {t("signupNamePhoneSubtitle")}
               </Typography>
               <Stack spacing={3}>
                 <TextField
-                  label="Your name"
+                  label={t("yourName")}
                   fullWidth
                   autoFocus
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                 />
                 <TextField
-                  label="Mobile number"
+                  label={t("mobileNumber")}
                   fullWidth
                   value={phone}
                   onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
@@ -224,10 +224,10 @@ export default function SignupPage() {
                   onClick={handleSendOtp}
                   sx={{ borderRadius: 6, py: 1.3, fontWeight: 600, boxShadow: "0 6px 16px rgba(0,101,143,0.35)" }}
                 >
-                  Send OTP
+                  {t("sendOtp")}
                 </Button>
                 <Typography variant="body2" align="center">
-                  Already have an account? <Link component="button" onClick={() => router.push("/login")}>Log in</Link>
+                  {t("alreadyHaveAccount")} <Link component="button" onClick={() => router.push("/login")}>{t("logInLink")}</Link>
                 </Typography>
               </Stack>
             </Box>
@@ -236,14 +236,14 @@ export default function SignupPage() {
           <Fade in={step === "otp"} unmountOnExit>
             <Box sx={{ display: step === "otp" ? "block" : "none" }}>
               <Typography variant="h6" sx={{ fontWeight: 600, mb: 0.5 }}>
-                {hasInvite ? "Enter your invite PIN" : "Verify your number"}
+                {hasInvite ? t("enterInvitePin") : t("verifyYourNumber")}
               </Typography>
               <Stack direction="row" spacing={0.5} sx={{ alignItems: "baseline", mb: 3 }}>
                 <Typography variant="body2" color="text.secondary">
-                  {hasInvite ? "Your admin shared a 4-digit PIN with you" : `Code sent to +91 ${phone}`}
+                  {hasInvite ? t("adminSharedPin") : `${t("codeSentTo")} +91 ${phone}`}
                 </Typography>
                 <Link component="button" variant="body2" onClick={() => setStep("phone")}>
-                  Change
+                  {t("changeLink")}
                 </Link>
               </Stack>
 
@@ -261,15 +261,15 @@ export default function SignupPage() {
                   onClick={() => handleVerifyOtp(otp.join(""))}
                   sx={{ borderRadius: 6, py: 1.3, fontWeight: 600, boxShadow: "0 6px 16px rgba(0,101,143,0.35)" }}
                 >
-                  Verify
+                  {t("verifyBtn")}
                 </Button>
                 {!hasInvite && (
                   <Typography variant="body2" align="center" color="text.secondary">
                     {resendIn > 0 ? (
-                      `Resend OTP in ${resendIn}s`
+                      `${t("resendOtpIn")} ${resendIn}s`
                     ) : (
                       <Link component="button" onClick={() => setResendIn(RESEND_SECONDS)}>
-                        Resend OTP
+                        {t("resendOtpLink")}
                       </Link>
                     )}
                   </Typography>
@@ -281,22 +281,22 @@ export default function SignupPage() {
           <Fade in={step === "password"} unmountOnExit>
             <Box sx={{ display: step === "password" ? "block" : "none" }}>
               <Typography variant="h6" sx={{ fontWeight: 600, mb: 0.5 }}>
-                Set a 6-digit password
+                {t("setPasswordTitle")}
               </Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                You&apos;ll use this to log in next time — no OTP needed.
+                {t("setPasswordSubtitle")}
               </Typography>
 
               <Stack spacing={3}>
                 <Stack spacing={1}>
                   <Typography variant="caption" color="text.secondary" align="center">
-                    Password
+                    {t("passwordLabel")}
                   </Typography>
                   <OtpInput value={password} onChange={setPassword} length={6} />
                 </Stack>
                 <Stack spacing={1}>
                   <Typography variant="caption" color="text.secondary" align="center">
-                    Confirm password
+                    {t("confirmPasswordLabel")}
                   </Typography>
                   <OtpInput
                     value={confirmPassword}
@@ -319,7 +319,7 @@ export default function SignupPage() {
                   onClick={handleCreateAccount}
                   sx={{ borderRadius: 6, py: 1.3, fontWeight: 600, boxShadow: "0 6px 16px rgba(0,101,143,0.35)" }}
                 >
-                  Create Account
+                  {t("createAccountBtn")}
                 </Button>
               </Stack>
             </Box>
@@ -329,7 +329,7 @@ export default function SignupPage() {
 
       <Snackbar open={showToast} anchorOrigin={{ vertical: "bottom", horizontal: "center" }}>
         <Alert severity="success" variant="filled" sx={{ width: "100%" }}>
-          Account created successfully
+          {t("accountCreatedToast")}
         </Alert>
       </Snackbar>
     </Box>

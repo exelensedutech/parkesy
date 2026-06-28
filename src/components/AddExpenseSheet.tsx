@@ -20,7 +20,7 @@ import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import SheetHandle from "./SheetHandle";
 import { useAppStore } from "@/lib/store";
 import { Expense } from "@/lib/types";
-import { EXPENSE_CATEGORIES, OTHER_CATEGORY, getExpenseCategory } from "@/lib/expenseCategories";
+import { EXPENSE_CATEGORIES, OTHER_CATEGORY, getExpenseCategory, expenseCategoryKey } from "@/lib/expenseCategories";
 import { BOTTOM_SHEET_PAPER_SX } from "@/lib/sheetStyles";
 
 function IconRow({ icon, color, label }: { icon: React.ReactNode; color: string; label: string }) {
@@ -43,7 +43,7 @@ export default function AddExpenseSheet({
   onClose: () => void;
   editingExpense?: Expense | null;
 }) {
-  const { addExpense, updateExpense } = useAppStore();
+  const { addExpense, updateExpense, t } = useAppStore();
   const today = dayjs.tz();
   const monthStart = today.startOf("month");
   const monthEnd = today.endOf("month");
@@ -79,7 +79,7 @@ export default function AddExpenseSheet({
   const handleSave = async () => {
     const value = parseFloat(amount);
     if (!value || value <= 0) {
-      setError("Enter a valid cost");
+      setError(t("enterValidCost"));
       return;
     }
     if (saving) return;
@@ -92,7 +92,7 @@ export default function AddExpenseSheet({
       }
       onClose();
     } catch {
-      setError("Could not save — please try again");
+      setError(t("couldNotSaveExpense"));
     } finally {
       setSaving(false);
     }
@@ -103,35 +103,39 @@ export default function AddExpenseSheet({
       <Box sx={{ p: 3, pb: 4 }}>
         <SheetHandle />
         <Typography variant="h6" gutterBottom>
-          {isEditing ? "Edit Expense" : "Add Expense"}
+          {isEditing ? t("editExpenseTitle") : t("addExpenseTitle")}
         </Typography>
 
         <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1, mt: 1 }}>
-          Expense Details
+          {t("expenseDetails")}
         </Typography>
         <Card sx={{ mb: 3 }}>
           <CardContent>
             <Typography variant="caption" color="text.secondary">
-              Type
+              {t("type")}
             </Typography>
             <FormControl fullWidth sx={{ mt: 0.5, mb: 2 }}>
               <Select
                 value={category}
                 onChange={(e: SelectChangeEvent) => setCategory(e.target.value)}
                 renderValue={() => (
-                  <IconRow icon={selectedCategory.icon} color={selectedCategory.color} label={selectedCategory.name} />
+                  <IconRow
+                    icon={selectedCategory.icon}
+                    color={selectedCategory.color}
+                    label={t(expenseCategoryKey(selectedCategory.name))}
+                  />
                 )}
               >
                 {EXPENSE_CATEGORIES.map((cat) => (
                   <MenuItem key={cat.name} value={cat.name}>
-                    <IconRow icon={cat.icon} color={cat.color} label={cat.name} />
+                    <IconRow icon={cat.icon} color={cat.color} label={t(expenseCategoryKey(cat.name))} />
                   </MenuItem>
                 ))}
               </Select>
             </FormControl>
 
             <TextField
-              label="Cost"
+              label={t("cost")}
               type="number"
               fullWidth
               value={amount}
@@ -146,7 +150,7 @@ export default function AddExpenseSheet({
             />
 
             <DatePicker
-              label="Date"
+              label={t("date")}
               value={date}
               onChange={(newValue) => newValue && setDate(newValue)}
               minDate={monthStart}
@@ -162,7 +166,7 @@ export default function AddExpenseSheet({
             />
 
             <TextField
-              label={isOther ? "Specify expense (optional)" : "Note (optional)"}
+              label={isOther ? t("specifyExpense") : t("noteOptional")}
               fullWidth
               value={note}
               onChange={(e) => setNote(e.target.value)}
@@ -178,7 +182,7 @@ export default function AddExpenseSheet({
           onClick={handleSave}
           sx={{ borderRadius: 6, py: 1.3, fontWeight: 600, boxShadow: "0 6px 16px rgba(0,101,143,0.35)" }}
         >
-          {saving ? "Saving…" : isEditing ? "Save Changes" : "Save Expense"}
+          {saving ? t("savingEllipsis") : isEditing ? t("saveChanges") : t("saveExpense")}
         </Button>
       </Box>
     </Drawer>

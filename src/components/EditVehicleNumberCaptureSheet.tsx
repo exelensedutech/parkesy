@@ -14,7 +14,7 @@ import { VehicleNumberCaptureMode } from "@/lib/types";
 import { BOTTOM_SHEET_PAPER_SX } from "@/lib/sheetStyles";
 
 export default function EditVehicleNumberCaptureSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const { vehicleNumberCaptureMode, setVehicleNumberCaptureMode } = useAppStore();
+  const { vehicleNumberCaptureMode, setVehicleNumberCaptureMode, t } = useAppStore();
   const [mode, setMode] = useState<VehicleNumberCaptureMode>(vehicleNumberCaptureMode);
 
   useEffect(() => {
@@ -31,19 +31,19 @@ export default function EditVehicleNumberCaptureSheet({ open, onClose }: { open:
       <Box sx={{ p: 3, pb: 4 }}>
         <SheetHandle />
         <Typography variant="h6" sx={{ mb: 2.5 }}>
-          Vehicle Number Capture
+          {t("vehicleNumberCaptureTitle")}
         </Typography>
 
         <RadioGroup value={mode} onChange={(e) => setMode(e.target.value as VehicleNumberCaptureMode)}>
-          <FormControlLabel value="full" control={<Radio />} label="Full vehicle number" />
-          <FormControlLabel value="last4" control={<Radio />} label="Last 4 digits only" />
+          <FormControlLabel value="full" control={<Radio />} label={t("fullVehicleNumberOption")} />
+          <FormControlLabel value="last4" control={<Radio />} label={t("last4DigitsOnlyOption")} />
         </RadioGroup>
         <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 1, mb: 3 }}>
-          Controls the keyboard shown on the Check-In screen.
+          {t("captureModeHelper")}
         </Typography>
 
         <Button variant="contained" size="large" fullWidth onClick={handleSave}>
-          Save
+          {t("save")}
         </Button>
       </Box>
     </Drawer>

@@ -13,8 +13,13 @@ import InputAdornment from "@mui/material/InputAdornment";
 import SheetHandle from "./SheetHandle";
 import { useAppStore } from "@/lib/store";
 import { RateSlab, VehicleType } from "@/lib/types";
-import { MEMBERSHIP_DURATIONS, durationLabel, getMembershipPrice } from "@/lib/membership";
+import { MEMBERSHIP_DURATIONS, durationUnitKey, getMembershipPrice } from "@/lib/membership";
 import { BOTTOM_SHEET_PAPER_SX } from "@/lib/sheetStyles";
+import { TranslationKey } from "@/lib/i18n";
+
+function vehicleTypeKey(name: string): TranslationKey {
+  return name === "Bike" ? "vehicleTypeBike" : name === "Cycle" ? "vehicleTypeCycle" : "vehicleTypeCar";
+}
 
 export default function EditVehicleTypeSheet({
   vehicleType,
@@ -23,7 +28,7 @@ export default function EditVehicleTypeSheet({
   vehicleType: VehicleType | null;
   onClose: () => void;
 }) {
-  const { updateVehicleTypeSlotsAndSlabs, updateVehicleTypeMembershipPricing } = useAppStore();
+  const { updateVehicleTypeSlotsAndSlabs, updateVehicleTypeMembershipPricing, t } = useAppStore();
   const [slots, setSlots] = useState("");
   const [firstHours, setFirstHours] = useState("");
   const [firstAmount, setFirstAmount] = useState("");
@@ -89,14 +94,14 @@ export default function EditVehicleTypeSheet({
       <Box sx={{ p: 3, pb: 4 }}>
         <SheetHandle />
         <Typography variant="h6" gutterBottom>
-          {vehicleType.name} Setup
+          {t(vehicleTypeKey(vehicleType.name))} {t("vehicleSetupTitle")}
         </Typography>
 
         <Typography variant="subtitle2" sx={{ mb: 1.5 }}>
-          Slots
+          {t("slotsSection")}
         </Typography>
         <TextField
-          label="Total slots"
+          label={t("totalSlotsLabel")}
           type="number"
           fullWidth
           value={slots}
@@ -106,13 +111,13 @@ export default function EditVehicleTypeSheet({
 
         <Divider sx={{ mb: 2 }} />
         <Typography variant="subtitle2" sx={{ mb: 1.5 }}>
-          Walk-in Pricing
+          {t("walkInPricingSection")}
         </Typography>
 
         <Grid container spacing={1.5} sx={{ mb: 2 }}>
           <Grid size={6}>
             <TextField
-              label="First N hours"
+              label={t("firstNHours")}
               type="number"
               fullWidth
               value={firstHours}
@@ -121,7 +126,7 @@ export default function EditVehicleTypeSheet({
           </Grid>
           <Grid size={6}>
             <TextField
-              label="Amount"
+              label={t("amountLabel")}
               type="number"
               fullWidth
               value={firstAmount}
@@ -134,7 +139,7 @@ export default function EditVehicleTypeSheet({
         <Grid container spacing={1.5} sx={{ mb: 3 }}>
           <Grid size={6}>
             <TextField
-              label="Then every N hours"
+              label={t("thenEveryNHours")}
               type="number"
               fullWidth
               value={everyHours}
@@ -143,7 +148,7 @@ export default function EditVehicleTypeSheet({
           </Grid>
           <Grid size={6}>
             <TextField
-              label="Amount"
+              label={t("amountLabel")}
               type="number"
               fullWidth
               value={everyAmount}
@@ -155,13 +160,13 @@ export default function EditVehicleTypeSheet({
 
         <Divider sx={{ mb: 2 }} />
         <Typography variant="subtitle2" sx={{ mb: 1.5 }}>
-          Member Pricing
+          {t("memberPricingSection")}
         </Typography>
         <Stack spacing={2} sx={{ mb: 3 }}>
           {MEMBERSHIP_DURATIONS.map((d) => (
             <TextField
               key={d}
-              label={durationLabel(d)}
+              label={`${d} ${t(durationUnitKey(d))}`}
               type="number"
               fullWidth
               value={memberPrices[d] ?? ""}
@@ -172,7 +177,7 @@ export default function EditVehicleTypeSheet({
         </Stack>
 
         <Button variant="contained" size="large" fullWidth onClick={handleSave}>
-          Save
+          {t("save")}
         </Button>
       </Box>
     </Drawer>

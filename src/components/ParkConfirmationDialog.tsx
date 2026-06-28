@@ -8,6 +8,8 @@ import Button from "@mui/material/Button";
 import Avatar from "@mui/material/Avatar";
 import Stack from "@mui/material/Stack";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import { useAppStore } from "@/lib/store";
+import { TranslationKey } from "@/lib/i18n";
 
 export interface ParkConfirmation {
   tokenCode: string;
@@ -17,6 +19,10 @@ export interface ParkConfirmation {
   isMember: boolean;
 }
 
+function vehicleTypeKey(name: string): TranslationKey {
+  return name === "Bike" ? "vehicleTypeBike" : name === "Cycle" ? "vehicleTypeCycle" : "vehicleTypeCar";
+}
+
 export default function ParkConfirmationDialog({
   confirmation,
   onClose,
@@ -24,6 +30,7 @@ export default function ParkConfirmationDialog({
   confirmation: ParkConfirmation | null;
   onClose: () => void;
 }) {
+  const { t } = useAppStore();
   return (
     <Dialog open={!!confirmation} onClose={onClose} maxWidth="xs" fullWidth>
       <DialogContent sx={{ textAlign: "center", pt: 4 }}>
@@ -31,7 +38,7 @@ export default function ParkConfirmationDialog({
           <CheckCircleIcon sx={{ fontSize: 36 }} />
         </Avatar>
         <Typography variant="h6" gutterBottom>
-          Vehicle Parked Successfully
+          {t("vehicleParkedSuccessfully")}
         </Typography>
         {confirmation && (
           <Stack spacing={0.75} sx={{ mt: 2 }}>
@@ -39,18 +46,20 @@ export default function ParkConfirmationDialog({
               {confirmation.tokenCode}
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              {confirmation.vehicleTypeName}
+              {t(vehicleTypeKey(confirmation.vehicleTypeName))}
               {confirmation.vehicleNumber ? ` · ${confirmation.vehicleNumber}` : ""}
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              {confirmation.isMember ? "Member — no charge" : `₹${confirmation.amountPaid} collected`}
+              {confirmation.isMember
+                ? t("memberNoCharge")
+                : `₹${confirmation.amountPaid} ${t("amountCollectedSuffix")}`}
             </Typography>
           </Stack>
         )}
       </DialogContent>
       <DialogActions sx={{ px: 3, pb: 3 }}>
         <Button variant="contained" fullWidth size="large" onClick={onClose}>
-          Done
+          {t("done")}
         </Button>
       </DialogActions>
     </Dialog>

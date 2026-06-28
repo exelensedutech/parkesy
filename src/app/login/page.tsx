@@ -17,7 +17,7 @@ const EMPTY_6 = ["", "", "", "", "", ""];
 
 export default function LoginPage() {
   const router = useRouter();
-  const { authChecked, isAuthenticated, login } = useAppStore();
+  const { authChecked, isAuthenticated, login, t } = useAppStore();
 
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState<string[]>(EMPTY_6);
@@ -108,7 +108,7 @@ export default function LoginPage() {
           Parkesy
         </Typography>
         <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.8)", mt: 0.5 }}>
-          Parking entries, billing &amp; reports
+          {t("parkesyTagline")}
         </Typography>
       </Box>
 
@@ -130,15 +130,15 @@ export default function LoginPage() {
       >
         <Box sx={{ width: "100%", maxWidth: 360 }}>
           <Typography variant="h6" sx={{ fontWeight: 600, mb: 0.5 }}>
-            Welcome back
+            {t("welcomeBack")}
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-            Enter your mobile number and 6-digit password
+            {t("loginSubtitle")}
           </Typography>
 
           <Stack spacing={3}>
             <TextField
-              label="Mobile number"
+              label={t("mobileNumber")}
               fullWidth
               autoFocus
               value={phone}
@@ -164,7 +164,7 @@ export default function LoginPage() {
             />
             {loginError && (
               <Typography variant="caption" color="error" align="center">
-                Couldn&apos;t log you in — check your phone &amp; password and try again
+                {t("loginErrorMsg")}
               </Typography>
             )}
 
@@ -176,11 +176,11 @@ export default function LoginPage() {
               onClick={() => handleLogin()}
               sx={{ borderRadius: 6, py: 1.3, fontWeight: 600, boxShadow: "0 6px 16px rgba(0,101,143,0.35)" }}
             >
-              Log In
+              {t("logIn")}
             </Button>
 
             <Typography variant="body2" align="center">
-              New here? <Link component="button" onClick={() => router.push("/signup")}>Sign up</Link>
+              {t("newHere")} <Link component="button" onClick={() => router.push("/signup")}>{t("signUpLink")}</Link>
             </Typography>
           </Stack>
         </Box>

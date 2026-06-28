@@ -6,6 +6,7 @@ import { alpha } from "@mui/material/styles";
 import { SxProps, Theme } from "@mui/material/styles";
 import { PaymentMode } from "@/lib/types";
 import { CASH_COLOR, ONLINE_COLOR } from "@/lib/colors";
+import { useAppStore } from "@/lib/store";
 
 export default function PaymentModeToggle({
   value,
@@ -16,6 +17,7 @@ export default function PaymentModeToggle({
   onChange: (mode: PaymentMode) => void;
   sx?: SxProps<Theme>;
 }) {
+  const { t } = useAppStore();
   return (
     <ToggleButtonGroup
       value={value}
@@ -31,7 +33,7 @@ export default function PaymentModeToggle({
           "&.Mui-selected:hover": { bgcolor: alpha(CASH_COLOR, 0.18) },
         }}
       >
-        Cash
+        {t("cash")}
       </ToggleButton>
       <ToggleButton
         value="online"
@@ -40,7 +42,7 @@ export default function PaymentModeToggle({
           "&.Mui-selected:hover": { bgcolor: alpha(ONLINE_COLOR, 0.18) },
         }}
       >
-        Online
+        {t("online")}
       </ToggleButton>
     </ToggleButtonGroup>
   );

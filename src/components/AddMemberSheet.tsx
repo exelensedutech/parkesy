@@ -26,8 +26,22 @@ import PaymentModeToggle from "./PaymentModeToggle";
 import { useAppStore } from "@/lib/store";
 import { Address, ID_PROOF_TYPES, IdProofType, PaymentMode } from "@/lib/types";
 import { VEHICLE_COLORS } from "@/lib/colors";
-import { MEMBERSHIP_DURATIONS, durationLabel, getMembershipPrice } from "@/lib/membership";
+import { MEMBERSHIP_DURATIONS, durationUnitKey, getMembershipPrice } from "@/lib/membership";
 import { BOTTOM_SHEET_PAPER_SX } from "@/lib/sheetStyles";
+import { TranslationKey } from "@/lib/i18n";
+
+function vehicleTypeKey(name: string): TranslationKey {
+  return name === "Bike" ? "vehicleTypeBike" : name === "Cycle" ? "vehicleTypeCycle" : "vehicleTypeCar";
+}
+
+const ID_PROOF_KEYS: Record<IdProofType, TranslationKey> = {
+  Aadhaar: "idProofTypeAadhaar",
+  "Driving Licence": "idProofTypeDrivingLicence",
+  "Voter ID": "idProofTypeVoterId",
+  "PAN Card": "idProofTypePanCard",
+  Passport: "idProofTypePassport",
+  Other: "idProofTypeOther",
+};
 
 function IconRow({ icon, color, label }: { icon: React.ReactNode; color: string; label: string }) {
   return (
@@ -75,6 +89,7 @@ function usePhotoCapture() {
 type PhotoCapture = ReturnType<typeof usePhotoCapture>;
 
 function PhotoPreviewDialog({ photo, label }: { photo: PhotoCapture; label: string }) {
+  const { t } = useAppStore();
   return (
     <Dialog open={photo.previewOpen} onClose={() => photo.setPreviewOpen(false)} maxWidth="xs" fullWidth>
       <DialogContent sx={{ p: 0 }}>
@@ -82,10 +97,10 @@ function PhotoPreviewDialog({ photo, label }: { photo: PhotoCapture; label: stri
       </DialogContent>
       <DialogActions sx={{ justifyContent: "space-between", px: 2, py: 1.5 }}>
         <Button color="error" startIcon={<DeleteIcon />} onClick={photo.handleDelete}>
-          Delete
+          {t("delete")}
         </Button>
         <Button startIcon={<CameraAltIcon />} onClick={photo.handleRetake}>
-          Retake
+          {t("retake")}
         </Button>
       </DialogActions>
     </Dialog>
@@ -93,7 +108,7 @@ function PhotoPreviewDialog({ photo, label }: { photo: PhotoCapture; label: stri
 }
 
 export default function AddMemberSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const { vehicleTypes, addMember, uploadPhoto } = useAppStore();
+  const { vehicleTypes, addMember, uploadPhoto, t } = useAppStore();
   const [vehicleTypeId, setVehicleTypeId] = useState(vehicleTypes[0].id);
   const [vehicleNumber, setVehicleNumber] = useState("");
   const [customerName, setCustomerName] = useState("");
@@ -114,7 +129,7 @@ export default function AddMemberSheet({ open, onClose }: { open: boolean; onClo
 
   const handleSave = async () => {
     if (!vehicleNumber.trim()) {
-      setError("Vehicle number is required");
+      setError(t("vehicleNumberRequired"));
       return;
     }
     if (saving) return;
@@ -151,7 +166,7 @@ export default function AddMemberSheet({ open, onClose }: { open: boolean; onClo
       setError("");
       onClose();
     } catch {
-      setError("Could not add member — please try again");
+      setError(t("couldNotAddMember"));
     } finally {
       setSaving(false);
     }
@@ -162,11 +177,11 @@ export default function AddMemberSheet({ open, onClose }: { open: boolean; onClo
       <Box sx={{ p: 3, pb: 4 }}>
         <SheetHandle />
         <Typography variant="h6" gutterBottom>
-          Add Member
+          {t("addMemberTitle")}
         </Typography>
 
         <Typography variant="caption" color="text.secondary">
-          Vehicle Type
+          {t("vehicleType")}
         </Typography>
         <FormControl fullWidth sx={{ mt: 0.5, mb: 2 }}>
           <Select
@@ -176,20 +191,20 @@ export default function AddMemberSheet({ open, onClose }: { open: boolean; onClo
               <IconRow
                 icon={<VehicleIcon name={selectedVehicleType.name} />}
                 color={VEHICLE_COLORS[selectedVehicleType.name]}
-                label={selectedVehicleType.name}
+                label={t(vehicleTypeKey(selectedVehicleType.name))}
               />
             )}
           >
             {vehicleTypes.map((vt) => (
               <MenuItem key={vt.id} value={vt.id}>
-                <IconRow icon={<VehicleIcon name={vt.name} />} color={VEHICLE_COLORS[vt.name]} label={vt.name} />
+                <IconRow icon={<VehicleIcon name={vt.name} />} color={VEHICLE_COLORS[vt.name]} label={t(vehicleTypeKey(vt.name))} />
               </MenuItem>
             ))}
           </Select>
         </FormControl>
 
         <TextField
-          label="Vehicle number"
+          label={t("vehicleNumber")}
           fullWidth
           value={vehicleNumber}
           onChange={(e) => {
@@ -228,32 +243,32 @@ export default function AddMemberSheet({ open, onClose }: { open: boolean; onClo
               onClick={() => vehiclePhoto.setPreviewOpen(true)}
             />
             <Typography variant="body2" color="text.secondary">
-              Vehicle photo captured — tap to view
+              {t("vehiclePhotoTapToView")}
             </Typography>
           </Stack>
         )}
 
         <Divider sx={{ mb: 2 }} />
         <Typography variant="subtitle2" sx={{ mb: 1.5 }}>
-          Customer Details
+          {t("customerDetailsSection")}
         </Typography>
 
         <TextField
-          label="Customer Name"
+          label={t("customerNameLabel")}
           fullWidth
           value={customerName}
           onChange={(e) => setCustomerName(e.target.value)}
           sx={{ mb: 2 }}
         />
         <TextField
-          label="Phone"
+          label={t("phoneLabel")}
           fullWidth
           value={customerPhone}
           onChange={(e) => setCustomerPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
           sx={{ mb: 2 }}
         />
         <TextField
-          label="Door No & Street"
+          label={t("doorNoStreet")}
           fullWidth
           multiline
           minRows={2}
@@ -264,7 +279,7 @@ export default function AddMemberSheet({ open, onClose }: { open: boolean; onClo
         <Grid container spacing={1.5} sx={{ mb: 2 }}>
           <Grid size={6}>
             <TextField
-              label="City"
+              label={t("city")}
               fullWidth
               value={customerAddress.city ?? ""}
               onChange={(e) => setCustomerAddress((prev) => ({ ...prev, city: e.target.value }))}
@@ -272,7 +287,7 @@ export default function AddMemberSheet({ open, onClose }: { open: boolean; onClo
           </Grid>
           <Grid size={6}>
             <TextField
-              label="Pincode"
+              label={t("pincode")}
               fullWidth
               value={customerAddress.pincode ?? ""}
               onChange={(e) =>
@@ -282,26 +297,26 @@ export default function AddMemberSheet({ open, onClose }: { open: boolean; onClo
           </Grid>
         </Grid>
         <TextField
-          label="State"
+          label={t("state")}
           fullWidth
           value={customerAddress.state ?? ""}
           onChange={(e) => setCustomerAddress((prev) => ({ ...prev, state: e.target.value }))}
           sx={{ mb: 2 }}
         />
         <Typography variant="caption" color="text.secondary">
-          ID Proof Type
+          {t("idProofTypeLabel")}
         </Typography>
         <FormControl fullWidth sx={{ mt: 0.5, mb: 2 }}>
           <Select value={idProofType} onChange={(e: SelectChangeEvent) => setIdProofType(e.target.value as IdProofType)}>
-            {ID_PROOF_TYPES.map((t) => (
-              <MenuItem key={t} value={t}>
-                {t}
+            {ID_PROOF_TYPES.map((proofType) => (
+              <MenuItem key={proofType} value={proofType}>
+                {t(ID_PROOF_KEYS[proofType])}
               </MenuItem>
             ))}
           </Select>
         </FormControl>
         <TextField
-          label="ID Number"
+          label={t("idNumberLabel")}
           fullWidth
           value={idProofNumber}
           onChange={(e) => setIdProofNumber(e.target.value)}
@@ -335,24 +350,24 @@ export default function AddMemberSheet({ open, onClose }: { open: boolean; onClo
               onClick={() => idPhoto.setPreviewOpen(true)}
             />
             <Typography variant="body2" color="text.secondary">
-              ID photo captured — tap to view
+              {t("idPhotoTapToView")}
             </Typography>
           </Stack>
         )}
 
         <Divider sx={{ mb: 2 }} />
         <Typography variant="subtitle2" sx={{ mb: 1.5 }}>
-          Plan
+          {t("planSection")}
         </Typography>
 
         <Typography variant="caption" color="text.secondary">
-          Membership Duration
+          {t("membershipDurationLabel")}
         </Typography>
         <FormControl fullWidth sx={{ mt: 0.5, mb: 2 }}>
           <Select value={durationMonths} onChange={(e: SelectChangeEvent<number>) => setDurationMonths(Number(e.target.value))}>
             {MEMBERSHIP_DURATIONS.map((d) => (
               <MenuItem key={d} value={d}>
-                {durationLabel(d)}
+                {d} {t(durationUnitKey(d))}
               </MenuItem>
             ))}
           </Select>
@@ -360,7 +375,7 @@ export default function AddMemberSheet({ open, onClose }: { open: boolean; onClo
 
         <Stack direction="row" sx={{ justifyContent: "space-between", alignItems: "center", mb: 2 }}>
           <Typography variant="body2" color="text.secondary">
-            Amount to collect
+            {t("amountToCollect")}
           </Typography>
           <Typography variant="h6" sx={{ fontWeight: 700 }}>
             ₹{amount}
@@ -368,22 +383,22 @@ export default function AddMemberSheet({ open, onClose }: { open: boolean; onClo
         </Stack>
         {amount === 0 && (
           <Typography variant="caption" color="error" sx={{ display: "block", mb: 2 }}>
-            No price configured for this duration — set it in Settings → Membership Pricing.
+            {t("noPriceConfigured")}
           </Typography>
         )}
 
         <Typography variant="caption" color="text.secondary">
-          Payment mode
+          {t("paymentMode")}
         </Typography>
         <PaymentModeToggle value={paymentMode} onChange={setPaymentMode} sx={{ mt: 0.5, mb: 3 }} />
 
         <Button variant="contained" size="large" fullWidth disabled={saving} onClick={handleSave}>
-          {saving ? "Adding…" : "Add Member & Collect Fee"}
+          {saving ? t("addingEllipsis") : t("addMemberCollectFee")}
         </Button>
       </Box>
 
-      <PhotoPreviewDialog photo={vehiclePhoto} label="Vehicle photo" />
-      <PhotoPreviewDialog photo={idPhoto} label="ID proof photo" />
+      <PhotoPreviewDialog photo={vehiclePhoto} label={t("vehiclePhotoTapToView")} />
+      <PhotoPreviewDialog photo={idPhoto} label={t("idPhotoTapToView")} />
     </Drawer>
   );
 }

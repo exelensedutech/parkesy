@@ -14,7 +14,7 @@ import { alpha } from "@mui/material/styles";
 import AddExpenseSheet from "@/components/AddExpenseSheet";
 import ExpenseDetailSheet from "@/components/ExpenseDetailSheet";
 import PeriodSelect from "@/components/PeriodSelect";
-import { getExpenseCategory } from "@/lib/expenseCategories";
+import { getExpenseCategory, expenseCategoryKey } from "@/lib/expenseCategories";
 import { useAppStore } from "@/lib/store";
 import { Expense } from "@/lib/types";
 import { isWithinRange } from "@/lib/calc";
@@ -23,7 +23,7 @@ import { DashboardPeriod, getPeriodRange } from "@/lib/dashboardPeriod";
 const PRIMARY = "#00658F";
 
 export default function ExpensesPage() {
-  const { expenses } = useAppStore();
+  const { expenses, language, t } = useAppStore();
   const [addOpen, setAddOpen] = useState(false);
   const [viewingExpense, setViewingExpense] = useState<Expense | null>(null);
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
@@ -54,7 +54,7 @@ export default function ExpensesPage() {
   return (
     <>
       <Typography variant="h5" sx={{ fontWeight: 700, mb: 2.5 }}>
-        Expenses
+        {t("expensesLabel")}
       </Typography>
 
       <PeriodSelect value={period} onChange={setPeriod} />
@@ -71,7 +71,7 @@ export default function ExpensesPage() {
               </Avatar>
               <Box>
                 <Typography variant="caption" color="text.secondary">
-                  Total
+                  {t("total")}
                 </Typography>
                 <Typography variant="h5" sx={{ fontWeight: 700, color: PRIMARY }}>
                   ₹{total}
@@ -83,12 +83,12 @@ export default function ExpensesPage() {
       </Card>
 
       <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
-        Expenses
+        {t("expensesLabel")}
       </Typography>
       <Stack spacing={1.5}>
         {periodExpenses.length === 0 && (
           <Typography variant="body2" color="text.secondary">
-            No expenses recorded in this range yet.
+            {t("noExpensesInRange")}
           </Typography>
         )}
         {periodExpenses.map((e) => {
@@ -100,14 +100,14 @@ export default function ExpensesPage() {
                   <Stack direction="row" spacing={1.5} sx={{ alignItems: "flex-start" }}>
                     <Avatar sx={{ bgcolor: cat.color, width: 36, height: 36 }}>{cat.icon}</Avatar>
                     <Box>
-                      <Typography variant="subtitle1">{e.title}</Typography>
+                      <Typography variant="subtitle1">{t(expenseCategoryKey(e.title))}</Typography>
                       {e.note && (
                         <Typography variant="body2" color="text.secondary">
                           {e.note}
                         </Typography>
                       )}
                       <Typography variant="caption" color="text.secondary">
-                        {new Date(e.expenseDate).toLocaleDateString("en-IN", {
+                        {new Date(e.expenseDate).toLocaleDateString(language === "ta" ? "ta-IN" : "en-IN", {
                           day: "numeric",
                           month: "short",
                           year: "numeric",

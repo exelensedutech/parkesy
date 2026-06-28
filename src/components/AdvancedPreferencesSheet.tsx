@@ -18,7 +18,8 @@ import { BOTTOM_SHEET_PAPER_SX } from "@/lib/sheetStyles";
 const PRIMARY = "#00658F";
 
 export default function AdvancedPreferencesSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const { vehicleNumberCaptureMode, collectAtCheckIn, setCollectAtCheckIn, longStayThresholdHours } = useAppStore();
+  const { vehicleNumberCaptureMode, collectAtCheckIn, setCollectAtCheckIn, longStayThresholdHours, t } =
+    useAppStore();
   const [editingCapture, setEditingCapture] = useState(false);
   const [editingThreshold, setEditingThreshold] = useState(false);
 
@@ -27,30 +28,30 @@ export default function AdvancedPreferencesSheet({ open, onClose }: { open: bool
       <Box sx={{ p: 3, pb: 4 }}>
         <SheetHandle />
         <Typography variant="h6" sx={{ mb: 2.5 }}>
-          Advanced Preferences
+          {t("advancedPreferencesTitle")}
         </Typography>
 
         <Stack spacing={1.5}>
           <SettingsRow
             icon={<TuneIcon />}
             color={PRIMARY}
-            title="Vehicle Number Capture"
-            subtitle={vehicleNumberCaptureMode === "last4" ? "Last 4 digits only" : "Full vehicle number"}
+            title={t("vehicleNumberCaptureTitle")}
+            subtitle={vehicleNumberCaptureMode === "last4" ? t("last4DigitsOnlyOption") : t("fullVehicleNumberOption")}
             onClick={() => setEditingCapture(true)}
           />
           <SettingsSwitchRow
             icon={<PaymentsIcon />}
             color={PRIMARY}
-            title="Payment at Check-In"
-            subtitle={collectAtCheckIn ? "Amount field shown on Check-In" : "Amount collected only at Check-Out"}
+            title={t("paymentAtCheckInTitle")}
+            subtitle={collectAtCheckIn ? t("amountFieldShownAtCheckIn") : t("amountCollectedAtCheckOutOnly")}
             checked={collectAtCheckIn}
             onChange={setCollectAtCheckIn}
           />
           <SettingsRow
             icon={<TimerIcon />}
             color={PRIMARY}
-            title="Long-Stay Alert Threshold"
-            subtitle={`Flag vehicles parked beyond ${longStayThresholdHours}h`}
+            title={t("longStayThresholdTitle")}
+            subtitle={`${t("flagVehiclesParkedBeyond")} ${longStayThresholdHours}h`}
             onClick={() => setEditingThreshold(true)}
           />
         </Stack>

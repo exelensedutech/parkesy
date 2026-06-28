@@ -20,25 +20,26 @@ import { useAppStore } from "@/lib/store";
 import { Member } from "@/lib/types";
 import { daysUntil } from "@/lib/calc";
 import { VEHICLE_COLORS } from "@/lib/colors";
-import { durationLabel } from "@/lib/membership";
+import { durationUnitKey } from "@/lib/membership";
+import { TranslationKey } from "@/lib/i18n";
 
-function statusFor(member: Member) {
+function statusFor(member: Member, t: (key: TranslationKey) => string) {
   const days = daysUntil(member.expiryDate);
-  if (days < 0) return { label: "Expired", color: "error" as const };
-  if (days <= 7) return { label: `Expires in ${days}d`, color: "warning" as const };
-  return { label: "Active", color: "success" as const };
+  if (days < 0) return { label: t("expired"), color: "error" as const };
+  if (days <= 7) return { label: `${t("expiresInDays")} ${days}d`, color: "warning" as const };
+  return { label: t("active"), color: "success" as const };
 }
 
 export default function MembersPage() {
   const router = useRouter();
-  const { role, members, vehicleTypes } = useAppStore();
+  const { role, members, vehicleTypes, t } = useAppStore();
   const [addOpen, setAddOpen] = useState(false);
   const [renewing, setRenewing] = useState<Member | null>(null);
 
   if (role !== "admin") {
     return (
       <Typography variant="body1" sx={{ mt: 4 }} align="center" color="text.secondary">
-        Members are only visible to the Admin.
+        {t("membersAdminOnly")}
       </Typography>
     );
   }
@@ -51,18 +52,18 @@ export default function MembersPage() {
         <IconButton onClick={() => router.push("/settings")} edge="start">
           <ArrowBackIcon />
         </IconButton>
-        <Typography variant="h6">Members</Typography>
+        <Typography variant="h6">{t("membersRowTitle")}</Typography>
       </Stack>
 
       <Stack spacing={1.5}>
         {sorted.length === 0 && (
           <Typography variant="body2" color="text.secondary">
-            No members yet. Tap + to add one.
+            {t("noMembersYet")}
           </Typography>
         )}
         {sorted.map((member) => {
           const vehicleType = vehicleTypes.find((vt) => vt.id === member.vehicleTypeId)!;
-          const status = statusFor(member);
+          const status = statusFor(member, t);
           return (
             <Card key={member.id} onClick={() => setRenewing(member)} sx={{ cursor: "pointer" }}>
               <CardContent>
@@ -75,7 +76,7 @@ export default function MembersPage() {
                       <Typography variant="subtitle1">{member.vehicleNumber}</Typography>
                       <Typography variant="body2" color="text.secondary">
                         {member.customerName ? `${member.customerName} · ` : ""}₹{member.feeAmount} /{" "}
-                        {durationLabel(member.durationMonths)}
+                        {member.durationMonths} {t(durationUnitKey(member.durationMonths))}
                       </Typography>
                     </Box>
                   </Stack>

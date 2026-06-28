@@ -20,20 +20,18 @@ import Avatar from "@mui/material/Avatar";
 import UserProfileSheet from "./UserProfileSheet";
 import { useAppStore } from "@/lib/store";
 
-const employeeTabs = [
-  { label: "Home", href: "/dashboard", icon: <HomeIcon /> },
-  { label: "Park", href: "/", icon: <LocalParkingIcon /> },
-  { label: "Expense", href: "/expenses", icon: <ReceiptLongIcon /> },
-];
-
-const adminTabs = [...employeeTabs, { label: "Settings", href: "/settings", icon: <SettingsIcon /> }];
-
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { role, businessName } = useAppStore();
+  const { role, businessName, t } = useAppStore();
   const [profileOpen, setProfileOpen] = useState(false);
 
+  const employeeTabs = [
+    { label: t("navHome"), href: "/dashboard", icon: <HomeIcon /> },
+    { label: t("navPark"), href: "/", icon: <LocalParkingIcon /> },
+    { label: t("navExpense"), href: "/expenses", icon: <ReceiptLongIcon /> },
+  ];
+  const adminTabs = [...employeeTabs, { label: t("navSettings"), href: "/settings", icon: <SettingsIcon /> }];
   const tabs = role === "admin" ? adminTabs : employeeTabs;
   // Match the most specific tab whose href prefixes the current path, so a
   // sub-route like /settings/members still highlights the Settings tab

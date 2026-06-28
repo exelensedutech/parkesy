@@ -8,6 +8,7 @@ import LocalGasStationIcon from "@mui/icons-material/LocalGasStation";
 import DescriptionIcon from "@mui/icons-material/Description";
 import AccountBalanceIcon from "@mui/icons-material/AccountBalance";
 import MoreHorizIcon from "@mui/icons-material/MoreHoriz";
+import { TranslationKey } from "./i18n";
 
 export interface ExpenseCategory {
   name: string;
@@ -36,4 +37,24 @@ export const EXPENSE_CATEGORIES: ExpenseCategory[] = [
 
 export function getExpenseCategory(name: string): ExpenseCategory {
   return EXPENSE_CATEGORIES.find((c) => c.name === name) ?? EXPENSE_CATEGORIES[EXPENSE_CATEGORIES.length - 1];
+}
+
+// Category names are stored as-is in the database (expense.title), so the
+// English name stays the canonical value everywhere — this only maps it to
+// a translation key for display.
+const CATEGORY_KEYS: Record<string, TranslationKey> = {
+  "Tea/Snacks": "expenseCategoryTeaSnacks",
+  Salary: "expenseCategorySalary",
+  Electricity: "expenseCategoryElectricity",
+  "Rent/Lease": "expenseCategoryRentLease",
+  Maintenance: "expenseCategoryMaintenance",
+  Water: "expenseCategoryWater",
+  Fuel: "expenseCategoryFuel",
+  "Stationery/Printing": "expenseCategoryStationeryPrinting",
+  "Licence/Tax": "expenseCategoryLicenceTax",
+  Other: "expenseCategoryOther",
+};
+
+export function expenseCategoryKey(name: string): TranslationKey {
+  return CATEGORY_KEYS[name] ?? "expenseCategoryOther";
 }

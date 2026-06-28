@@ -23,13 +23,24 @@ import PeriodSelect from "@/components/PeriodSelect";
 import { useAppStore } from "@/lib/store";
 import { isWithinRange } from "@/lib/calc";
 import { VEHICLE_COLORS } from "@/lib/colors";
-import { DashboardPeriod, PERIOD_LABELS, getPeriodRange } from "@/lib/dashboardPeriod";
+import { DashboardPeriod, getPeriodRange } from "@/lib/dashboardPeriod";
+import { TranslationKey } from "@/lib/i18n";
 
 const GREEN = "#2E7D32";
 const ORANGE = "#E65100";
 
+const PERIOD_LABEL_KEY: Record<DashboardPeriod, TranslationKey> = {
+  today: "today",
+  week: "last7Days",
+  month: "thisMonth",
+};
+
+function vehicleTypeKey(name: string): TranslationKey {
+  return name === "Bike" ? "vehicleTypeBike" : name === "Cycle" ? "vehicleTypeCycle" : "vehicleTypeCar";
+}
+
 export default function DashboardPage() {
-  const { sessions, expenses, vehicleTypes, memberPayments } = useAppStore();
+  const { sessions, expenses, vehicleTypes, memberPayments, t } = useAppStore();
   const [period, setPeriod] = useState<DashboardPeriod>("today");
   const { start, end } = getPeriodRange(period);
 
@@ -78,16 +89,16 @@ export default function DashboardPage() {
   const sharePct = hasMoneyData ? (collected / (collected + expensesInRange)) * 100 : 0;
 
   const trafficMetrics = [
-    { label: "Entered", value: entered, icon: <LoginIcon />, color: "#1565C0" },
-    { label: "Exited", value: exited, icon: <LogoutIcon />, color: "#AD1457" },
-    { label: "Currently Parked", value: currentlyParked, icon: <LocalParkingIcon />, color: "#37474F" },
+    { label: t("entered"), value: entered, icon: <LoginIcon />, color: "#1565C0" },
+    { label: t("exited"), value: exited, icon: <LogoutIcon />, color: "#AD1457" },
+    { label: t("currentlyParked"), value: currentlyParked, icon: <LocalParkingIcon />, color: "#37474F" },
   ];
 
   const metrics = [
-    { label: "Collected", value: `₹${collected}`, icon: <PaymentsIcon />, color: GREEN },
-    { label: "Expenses", value: `₹${expensesInRange}`, icon: <ReceiptLongIcon />, color: ORANGE },
-    { label: "Cash", value: `₹${cash}`, icon: <LocalAtmIcon />, color: "#00838F" },
-    { label: "Online", value: `₹${online}`, icon: <CreditCardIcon />, color: "#5E35B1" },
+    { label: t("collectedLabel"), value: `₹${collected}`, icon: <PaymentsIcon />, color: GREEN },
+    { label: t("expensesLabel"), value: `₹${expensesInRange}`, icon: <ReceiptLongIcon />, color: ORANGE },
+    { label: t("cash"), value: `₹${cash}`, icon: <LocalAtmIcon />, color: "#00838F" },
+    { label: t("online"), value: `₹${online}`, icon: <CreditCardIcon />, color: "#5E35B1" },
   ];
 
   return (
@@ -95,7 +106,7 @@ export default function DashboardPage() {
       <PeriodSelect value={period} onChange={setPeriod} />
 
       <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
-        Traffic
+        {t("traffic")}
       </Typography>
       <Grid container spacing={1.5} sx={{ mb: 2.5 }}>
         {trafficMetrics.map((m) => (
@@ -116,7 +127,7 @@ export default function DashboardPage() {
       </Grid>
 
       <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
-        Collections
+        {t("collectionsLabel")}
       </Typography>
       <Grid container spacing={1.5} sx={{ mb: 2 }}>
         {metrics.map((m) => (
@@ -137,17 +148,17 @@ export default function DashboardPage() {
       </Grid>
 
       <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
-        Profit &amp; Loss
+        {t("profitAndLoss")}
       </Typography>
       <Card sx={{ mb: 2.5 }}>
         <CardContent>
           <Typography variant="overline" sx={{ fontWeight: 700, color: "text.secondary", letterSpacing: 1 }}>
-            {PERIOD_LABELS[period]}
+            {t(PERIOD_LABEL_KEY[period])}
           </Typography>
           <Grid container spacing={1.5} sx={{ mb: 2, mt: 0.5 }}>
             <Grid size={4}>
               <Typography variant="caption" color="text.secondary">
-                Collected
+                {t("collectedLabel")}
               </Typography>
               <Typography variant="h6" sx={{ fontWeight: 700, color: GREEN }}>
                 ₹{collected}
@@ -155,7 +166,7 @@ export default function DashboardPage() {
             </Grid>
             <Grid size={4}>
               <Typography variant="caption" color="text.secondary">
-                Expenses
+                {t("expensesLabel")}
               </Typography>
               <Typography variant="h6" sx={{ fontWeight: 700, color: ORANGE }}>
                 ₹{expensesInRange}
@@ -163,7 +174,7 @@ export default function DashboardPage() {
             </Grid>
             <Grid size={4}>
               <Typography variant="caption" color="text.secondary">
-                Net
+                {t("net")}
               </Typography>
               <Typography variant="h6" sx={{ fontWeight: 700, color: netColor }}>
                 ₹{net}
@@ -183,13 +194,13 @@ export default function DashboardPage() {
             <Stack direction="row" spacing={0.75} sx={{ alignItems: "center" }}>
               <Box sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: GREEN }} />
               <Typography variant="caption" color="text.secondary">
-                Collected
+                {t("collectedLabel")}
               </Typography>
             </Stack>
             <Stack direction="row" spacing={0.75} sx={{ alignItems: "center" }}>
               <Box sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: ORANGE }} />
               <Typography variant="caption" color="text.secondary">
-                Expenses
+                {t("expensesLabel")}
               </Typography>
             </Stack>
           </Stack>
@@ -197,7 +208,7 @@ export default function DashboardPage() {
       </Card>
 
       <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
-        Capacity
+        {t("capacity")}
       </Typography>
       <Card>
         <CardContent>
@@ -237,7 +248,7 @@ export default function DashboardPage() {
                     </Box>
                   </Box>
                   <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                    {vt.name}
+                    {t(vehicleTypeKey(vt.name))}
                   </Typography>
                   <Typography variant="caption" color="text.secondary">
                     {parkedCount}/{vt.totalSlots}

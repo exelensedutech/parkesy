@@ -16,8 +16,9 @@ import MoreVertIcon from "@mui/icons-material/MoreVert";
 import EditIcon from "@mui/icons-material/Edit";
 import SheetHandle from "./SheetHandle";
 import { Expense } from "@/lib/types";
-import { getExpenseCategory } from "@/lib/expenseCategories";
+import { getExpenseCategory, expenseCategoryKey } from "@/lib/expenseCategories";
 import { BOTTOM_SHEET_PAPER_SX } from "@/lib/sheetStyles";
+import { useAppStore } from "@/lib/store";
 
 export default function ExpenseDetailSheet({
   expense,
@@ -28,6 +29,7 @@ export default function ExpenseDetailSheet({
   onClose: () => void;
   onEdit: (expense: Expense) => void;
 }) {
+  const { language, t } = useAppStore();
   const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null);
 
   if (!expense) return null;
@@ -46,7 +48,7 @@ export default function ExpenseDetailSheet({
         <Stack direction="row" sx={{ justifyContent: "space-between", alignItems: "center", mb: 2 }}>
           <Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}>
             <Avatar sx={{ bgcolor: cat.color, width: 40, height: 40 }}>{cat.icon}</Avatar>
-            <Typography variant="h6">{expense.title}</Typography>
+            <Typography variant="h6">{t(expenseCategoryKey(expense.title))}</Typography>
           </Stack>
           <IconButton onClick={(e) => setMenuAnchor(e.currentTarget)} aria-label="More options">
             <MoreVertIcon />
@@ -56,7 +58,7 @@ export default function ExpenseDetailSheet({
               <ListItemIcon>
                 <EditIcon fontSize="small" />
               </ListItemIcon>
-              <ListItemText>Edit</ListItemText>
+              <ListItemText>{t("edit")}</ListItemText>
             </MenuItem>
           </Menu>
         </Stack>
@@ -64,7 +66,7 @@ export default function ExpenseDetailSheet({
         <Divider sx={{ mb: 2 }} />
 
         <Typography variant="overline" color="text.secondary">
-          Cost
+          {t("cost")}
         </Typography>
         <Typography variant="h4" sx={{ fontWeight: 700, mb: 2 }}>
           ₹{expense.amount}
@@ -73,10 +75,10 @@ export default function ExpenseDetailSheet({
         <Stack spacing={0.75}>
           <Stack direction="row" sx={{ justifyContent: "space-between" }}>
             <Typography variant="body2" color="text.secondary">
-              Date
+              {t("date")}
             </Typography>
             <Typography variant="body2">
-              {new Date(expense.expenseDate).toLocaleDateString("en-IN", {
+              {new Date(expense.expenseDate).toLocaleDateString(language === "ta" ? "ta-IN" : "en-IN", {
                 day: "numeric",
                 month: "short",
                 year: "numeric",
@@ -87,7 +89,7 @@ export default function ExpenseDetailSheet({
           {expense.note && (
             <Stack direction="row" sx={{ justifyContent: "space-between" }}>
               <Typography variant="body2" color="text.secondary">
-                Note
+                {t("note")}
               </Typography>
               <Typography variant="body2" sx={{ textAlign: "right", maxWidth: "60%" }}>
                 {expense.note}
@@ -96,7 +98,7 @@ export default function ExpenseDetailSheet({
           )}
           <Stack direction="row" sx={{ justifyContent: "space-between" }}>
             <Typography variant="body2" color="text.secondary">
-              Created by
+              {t("createdBy")}
             </Typography>
             <Typography variant="body2">{expense.recordedBy}</Typography>
           </Stack>

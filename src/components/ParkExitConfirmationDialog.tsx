@@ -8,6 +8,8 @@ import Button from "@mui/material/Button";
 import Avatar from "@mui/material/Avatar";
 import Stack from "@mui/material/Stack";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import { useAppStore } from "@/lib/store";
+import { TranslationKey } from "@/lib/i18n";
 
 export interface ParkExitConfirmation {
   tokenCode: string;
@@ -19,6 +21,10 @@ export interface ParkExitConfirmation {
   refundAmount?: number;
 }
 
+function vehicleTypeKey(name: string): TranslationKey {
+  return name === "Bike" ? "vehicleTypeBike" : name === "Cycle" ? "vehicleTypeCycle" : "vehicleTypeCar";
+}
+
 export default function ParkExitConfirmationDialog({
   confirmation,
   onClose,
@@ -26,6 +32,7 @@ export default function ParkExitConfirmationDialog({
   confirmation: ParkExitConfirmation | null;
   onClose: () => void;
 }) {
+  const { t } = useAppStore();
   return (
     <Dialog open={!!confirmation} onClose={onClose} maxWidth="xs" fullWidth>
       <DialogContent sx={{ textAlign: "center", pt: 4 }}>
@@ -33,7 +40,7 @@ export default function ParkExitConfirmationDialog({
           <CheckCircleIcon sx={{ fontSize: 36 }} />
         </Avatar>
         <Typography variant="h6" gutterBottom>
-          Vehicle Exited Successfully
+          {t("vehicleExitedSuccessfully")}
         </Typography>
         {confirmation && (
           <Stack spacing={0.75} sx={{ mt: 2 }}>
@@ -41,25 +48,25 @@ export default function ParkExitConfirmationDialog({
               {confirmation.tokenCode}
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              {confirmation.vehicleTypeName}
+              {t(vehicleTypeKey(confirmation.vehicleTypeName))}
               {confirmation.vehicleNumber ? ` · ${confirmation.vehicleNumber}` : ""}
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              Parked for {confirmation.duration}
+              {t("parkedFor")} {confirmation.duration}
             </Typography>
             <Typography variant="body2" color="text.secondary">
               {confirmation.isMember
-                ? "Member — no charge"
+                ? t("memberNoCharge")
                 : confirmation.refundAmount
-                  ? `₹${confirmation.refundAmount} refunded to customer`
-                  : `₹${confirmation.totalAmount} total collected`}
+                  ? `₹${confirmation.refundAmount} ${t("refundedToCustomerSuffix")}`
+                  : `₹${confirmation.totalAmount} ${t("totalCollectedSuffix")}`}
             </Typography>
           </Stack>
         )}
       </DialogContent>
       <DialogActions sx={{ px: 3, pb: 3 }}>
         <Button variant="contained" fullWidth size="large" onClick={onClose}>
-          Done
+          {t("done")}
         </Button>
       </DialogActions>
     </Dialog>

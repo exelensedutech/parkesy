@@ -19,13 +19,13 @@ import { useAppStore } from "@/lib/store";
 
 export default function TeamPage() {
   const router = useRouter();
-  const { role, teamInvites, removeTeamInvite } = useAppStore();
+  const { role, teamInvites, removeTeamInvite, t } = useAppStore();
   const [addOpen, setAddOpen] = useState(false);
 
   if (role !== "admin") {
     return (
       <Typography variant="body1" sx={{ mt: 4 }} align="center" color="text.secondary">
-        Team members are only visible to the Admin.
+        {t("teamMembersOnlyAdmin")}
       </Typography>
     );
   }
@@ -36,16 +36,16 @@ export default function TeamPage() {
         <IconButton onClick={() => router.push("/settings")} edge="start">
           <ArrowBackIcon />
         </IconButton>
-        <Typography variant="h6">Team Members</Typography>
+        <Typography variant="h6">{t("teamMembersRowTitle")}</Typography>
       </Stack>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2.5 }}>
-        Invited team members enter their phone number and this PIN on the sign-up screen instead of an OTP.
+        {t("teamPageSubtitle")}
       </Typography>
 
       <Stack spacing={1.5}>
         {teamInvites.length === 0 && (
           <Typography variant="body2" color="text.secondary">
-            No team members invited yet. Tap + to add one.
+            {t("noTeamMembersYet")}
           </Typography>
         )}
         {teamInvites.map((invite) => (
@@ -63,7 +63,7 @@ export default function TeamPage() {
                 </Stack>
                 <Stack direction="row" spacing={0.5} sx={{ alignItems: "center" }}>
                   <Chip
-                    label={invite.role === "admin" ? "Admin" : "Employee"}
+                    label={invite.role === "admin" ? t("admin") : t("employeeRole")}
                     size="small"
                     color={invite.role === "admin" ? "primary" : "default"}
                   />

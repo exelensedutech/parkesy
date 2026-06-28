@@ -15,7 +15,7 @@ import { Role } from "@/lib/types";
 import { BOTTOM_SHEET_PAPER_SX } from "@/lib/sheetStyles";
 
 export default function AddTeamMemberSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const { phone: ownPhone, teamInvites, addTeamInvite } = useAppStore();
+  const { phone: ownPhone, teamInvites, addTeamInvite, t } = useAppStore();
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [pin, setPin] = useState("");
@@ -24,19 +24,19 @@ export default function AddTeamMemberSheet({ open, onClose }: { open: boolean; o
 
   const handleSave = () => {
     if (!name.trim()) {
-      setError("Name is required");
+      setError(t("nameRequired"));
       return;
     }
     if (phone.length !== 10) {
-      setError("Enter a valid 10-digit phone number");
+      setError(t("validPhone10Digits"));
       return;
     }
     if (phone === ownPhone || teamInvites.some((inv) => inv.phone === phone)) {
-      setError("This phone number is already invited");
+      setError(t("phoneAlreadyInvited"));
       return;
     }
     if (pin.length !== 4) {
-      setError("PIN must be exactly 4 digits");
+      setError(t("pinMustBe4Digits"));
       return;
     }
     addTeamInvite(name.trim(), phone, pin, accessLevel);
@@ -53,12 +53,19 @@ export default function AddTeamMemberSheet({ open, onClose }: { open: boolean; o
       <Box sx={{ p: 3, pb: 4 }}>
         <SheetHandle />
         <Typography variant="h6" sx={{ mb: 2.5 }}>
-          Add Team Member
+          {t("addTeamMemberTitle")}
         </Typography>
 
-        <TextField label="Name" fullWidth autoFocus value={name} onChange={(e) => setName(e.target.value)} sx={{ mb: 2 }} />
         <TextField
-          label="Phone number"
+          label={t("name")}
+          fullWidth
+          autoFocus
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          sx={{ mb: 2 }}
+        />
+        <TextField
+          label={t("phoneNumberLabel")}
           fullWidth
           value={phone}
           onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
@@ -66,28 +73,26 @@ export default function AddTeamMemberSheet({ open, onClose }: { open: boolean; o
           sx={{ mb: 2 }}
         />
         <TextField
-          label="Invite PIN (4 digits)"
+          label={t("invitePinLabel")}
           fullWidth
           value={pin}
           onChange={(e) => setPin(e.target.value.replace(/\D/g, "").slice(0, 4))}
           slotProps={{ htmlInput: { inputMode: "numeric", pattern: "[0-9]*" } }}
-          helperText="Share this PIN with them — they'll enter it instead of an OTP when signing up."
+          helperText={t("invitePinHelper")}
           sx={{ mb: 2 }}
         />
 
         <Typography variant="caption" color="text.secondary">
-          Access Level
+          {t("accessLevelLabel")}
         </Typography>
         <FormControl fullWidth sx={{ mt: 0.5, mb: 0.5 }}>
           <Select value={accessLevel} onChange={(e: SelectChangeEvent) => setAccessLevel(e.target.value as Role)}>
-            <MenuItem value="employee">Employee</MenuItem>
-            <MenuItem value="admin">Admin</MenuItem>
+            <MenuItem value="employee">{t("employeeRole")}</MenuItem>
+            <MenuItem value="admin">{t("admin")}</MenuItem>
           </Select>
         </FormControl>
         <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 2 }}>
-          {accessLevel === "admin"
-            ? "Full access, including Settings and Reports."
-            : "Can log parking and expenses. No access to Settings or Reports."}
+          {accessLevel === "admin" ? t("fullAccessAdminDesc") : t("employeeAccessDesc")}
         </Typography>
 
         {error && (
@@ -97,7 +102,7 @@ export default function AddTeamMemberSheet({ open, onClose }: { open: boolean; o
         )}
 
         <Button variant="contained" size="large" fullWidth onClick={handleSave}>
-          Send Invite
+          {t("sendInvite")}
         </Button>
       </Box>
     </Drawer>
