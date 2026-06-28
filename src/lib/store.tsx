@@ -487,7 +487,16 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         void supabase.auth.getUser().then(({ data }) => {
           const userId = data.user?.id;
           if (!userId) return;
-          void supabase.from("profiles").update({ name: trimmedName, address }).eq("id", userId);
+          void supabase
+            .from("profiles")
+            .update({ name: trimmedName, address })
+            .eq("id", userId)
+            .select()
+            .maybeSingle()
+            .then(({ data: row, error }) => {
+              if (error) console.error("Failed to save profile:", error);
+              else if (!row) console.error("Profile update matched no rows — userId:", userId);
+            });
         });
       },
       teamInvites,
@@ -498,13 +507,20 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           .insert({ business_id: businessId, name: name.trim(), phone: phoneNum.trim(), pin, role: inviteRole })
           .select()
           .single()
-          .then(({ data }) => {
-            if (data) setTeamInvites((prev) => [mapInviteRow(data), ...prev]);
+          .then(({ data, error }) => {
+            if (error) console.error("Failed to add team invite:", error);
+            else if (data) setTeamInvites((prev) => [mapInviteRow(data), ...prev]);
           });
       },
       removeTeamInvite: (id) => {
         setTeamInvites((prev) => prev.filter((inv) => inv.id !== id));
-        void supabase.from("team_invites").delete().eq("id", id);
+        void supabase
+          .from("team_invites")
+          .delete()
+          .eq("id", id)
+          .then(({ error }) => {
+            if (error) console.error("Failed to remove team invite:", error);
+          });
       },
       businessName,
       businessAddress,
@@ -698,7 +714,16 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       updateSessionVehicleNumber: (sessionId, vehicleNumber) => {
         const trimmed = vehicleNumber.trim().toUpperCase();
         setSessions((prev) => prev.map((s) => (s.id === sessionId ? { ...s, vehicleNumber: trimmed } : s)));
-        void supabase.from("parking_sessions").update({ vehicle_number: trimmed }).eq("id", sessionId);
+        void supabase
+          .from("parking_sessions")
+          .update({ vehicle_number: trimmed })
+          .eq("id", sessionId)
+          .select()
+          .maybeSingle()
+          .then(({ data, error }) => {
+            if (error) console.error("Failed to update vehicle number:", error);
+            else if (!data) console.error("Vehicle number update matched no rows — sessionId:", sessionId);
+          });
       },
       addExpense: async (amount, title, note, expenseDate) => {
         if (!businessId) return;
