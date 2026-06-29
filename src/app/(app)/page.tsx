@@ -161,6 +161,9 @@ export default function ParkPage() {
                             {t("parkedAtPrefix")} {parkedAt}
                             {session.vehicleNumber ? ` · ${session.vehicleNumber}` : ""}
                           </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {t("checkedInByPrefix")}: {session.recordedBy}
+                          </Typography>
                         </Box>
                       </Stack>
                       <Stack direction="row" spacing={0.75} sx={{ alignItems: "center" }}>

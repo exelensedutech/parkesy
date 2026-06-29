@@ -29,6 +29,7 @@ const en = {
   type: "Type",
   cost: "Cost",
   createdBy: "Created by",
+  checkedInByPrefix: "Checked in by",
   address: "Address",
 
   // Navigation
@@ -312,6 +313,7 @@ const ta: Record<TranslationKey, string> = {
   type: "வகை",
   cost: "செலவு",
   createdBy: "பதிவு செய்தவர்",
+  checkedInByPrefix: "செக் இன் செய்தவர்",
   address: "முகவரி",
 
   // Navigation

@@ -193,6 +193,9 @@ export default function ParkOutSheet({
           <Typography variant="body2" color="text.secondary">
             {t("parkedFor")} {formatDuration(hours)}
           </Typography>
+          <Typography variant="body2" color="text.secondary">
+            {t("checkedInByPrefix")}: {session.recordedBy}
+          </Typography>
         </Stack>
 
         <Divider sx={{ mb: 2 }} />
