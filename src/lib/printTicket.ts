@@ -98,11 +98,22 @@ export function printThermalTicket(data: TicketData): void {
 </body>
 </html>`;
 
-  const win = window.open("", "_blank", "width=400,height=600");
-  if (!win) return;
-  win.document.write(html);
-  win.document.close();
-  win.focus();
-  win.print();
-  win.addEventListener("afterprint", () => win.close());
+  const iframe = document.createElement("iframe");
+  iframe.style.cssText = "position:fixed;width:0;height:0;border:none;top:0;left:0;";
+  document.body.appendChild(iframe);
+
+  const doc = iframe.contentDocument ?? iframe.contentWindow?.document;
+  if (!doc) { document.body.removeChild(iframe); return; }
+
+  doc.open();
+  doc.write(html);
+  doc.close();
+
+  iframe.onload = () => {
+    iframe.contentWindow?.focus();
+    iframe.contentWindow?.print();
+    iframe.contentWindow?.addEventListener("afterprint", () => {
+      document.body.removeChild(iframe);
+    });
+  };
 }
