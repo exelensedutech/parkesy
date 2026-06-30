@@ -135,7 +135,9 @@ export default function ParkInForm() {
         vehicleTypeName: selectedVehicleType.name,
         vehicleNumber: finalVehicleNumber,
         amountPaid: paidValue,
+        paymentMode: paidValue > 0 ? paymentMode : undefined,
         isMember: Boolean(activeMember),
+        entryTime: new Date().toISOString(),
       });
       setVehicleNumber("");
       setAmountPaid("");

@@ -149,6 +149,12 @@ const en = {
   longStayThresholdTitle: "Long-Stay Alert Threshold",
   flagVehiclesParkedBeyond: "Flag vehicles parked beyond",
   hoursUnit: "hours",
+  thermalPaperWidthTitle: "Thermal Paper Width",
+  paperWidth58mm: "58mm — narrow roll",
+  paperWidth80mm: "80mm — wide roll",
+  thermalPaperWidthHelper: "Match this to the paper roll in your printer.",
+  printTicket: "Print Ticket",
+  payAtExit: "Pay at exit",
 
   // Business Details sheet
   businessStandName: "Business / stand name",
@@ -436,6 +442,12 @@ const ta: Record<TranslationKey, string> = {
   longStayThresholdTitle: "நீண்ட நேர நிறுத்த எச்சரிக்கை வரம்பு",
   flagVehiclesParkedBeyond: "இதற்கு மேல் நிறுத்தப்பட்ட வாகனங்களைக் குறிக்கவும்",
   hoursUnit: "மணி நேரம்",
+  thermalPaperWidthTitle: "வெப்ப காகித அகலம்",
+  paperWidth58mm: "58mm — குறுகிய ரோல்",
+  paperWidth80mm: "80mm — அகன்ற ரோல்",
+  thermalPaperWidthHelper: "உங்கள் அச்சுப்பொறியின் காகித ரோல் அளவை தேர்வு செய்யுங்கள்.",
+  printTicket: "டிக்கெட் அச்சிடு",
+  payAtExit: "வெளியேறும்போது கட்டுங்கள்",
 
   // Business Details sheet
   businessStandName: "தொழில் / நிலையத்தின் பெயர்",

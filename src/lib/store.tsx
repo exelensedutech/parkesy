@@ -16,6 +16,7 @@ import {
   RateSlab,
   Role,
   TeamInvite,
+  ThermalPaperWidth,
   VehicleNumberCaptureMode,
   VehicleType,
 } from "./types";
@@ -217,6 +218,8 @@ interface AppState {
   setCollectAtCheckIn: (value: boolean) => void;
   longStayThresholdHours: number;
   setLongStayThresholdHours: (hours: number) => void;
+  thermalPaperWidth: ThermalPaperWidth;
+  setThermalPaperWidth: (width: ThermalPaperWidth) => void;
   vehicleTypes: VehicleType[];
   updateVehicleTypeSlotsAndSlabs: (vehicleTypeId: string, totalSlots: number, slabs: RateSlab[]) => void;
   updateVehicleTypeMembershipPricing: (
@@ -271,6 +274,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [vehicleNumberCaptureMode, setVehicleNumberCaptureModeState] = useState<VehicleNumberCaptureMode>("full");
   const [collectAtCheckIn, setCollectAtCheckInState] = useState(true);
   const [longStayThresholdHours, setLongStayThresholdHoursState] = useState(24);
+  const [thermalPaperWidth, setThermalPaperWidthState] = useState<ThermalPaperWidth>("58mm");
   const [vehicleTypes, setVehicleTypes] = useState<VehicleType[]>([]);
 
   const [sessions, setSessions] = useState<ParkingSession[]>([]);
@@ -394,6 +398,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       active = false;
       subscription.subscription.unsubscribe();
     };
+  }, []);
+
+  useEffect(() => {
+    const saved = localStorage.getItem("thermalPaperWidth");
+    if (saved === "58mm" || saved === "80mm") setThermalPaperWidthState(saved);
   }, []);
 
   const findMatchingMembers = (vehicleTypeId: string, vehicleNumber: string): Member[] => {
@@ -586,6 +595,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
             if (error) console.error("Failed to save long-stay threshold:", error);
             else if (!data) console.error("Long-stay threshold update matched no rows — businessId:", businessId);
           });
+      },
+      thermalPaperWidth,
+      setThermalPaperWidth: (width) => {
+        setThermalPaperWidthState(width);
+        localStorage.setItem("thermalPaperWidth", width);
       },
       vehicleTypes,
       updateVehicleTypeSlotsAndSlabs: (vehicleTypeId, totalSlots, slabs) => {

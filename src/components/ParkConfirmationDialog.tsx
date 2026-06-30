@@ -8,15 +8,20 @@ import Button from "@mui/material/Button";
 import Avatar from "@mui/material/Avatar";
 import Stack from "@mui/material/Stack";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import PrintIcon from "@mui/icons-material/Print";
 import { useAppStore } from "@/lib/store";
+import { PaymentMode } from "@/lib/types";
 import { TranslationKey } from "@/lib/i18n";
+import { printThermalTicket } from "@/lib/printTicket";
 
 export interface ParkConfirmation {
   tokenCode: string;
   vehicleTypeName: string;
   vehicleNumber: string;
   amountPaid: number;
+  paymentMode?: PaymentMode;
   isMember: boolean;
+  entryTime: string; // ISO
 }
 
 function vehicleTypeKey(name: string): TranslationKey {
@@ -30,7 +35,24 @@ export default function ParkConfirmationDialog({
   confirmation: ParkConfirmation | null;
   onClose: () => void;
 }) {
-  const { t } = useAppStore();
+  const { t, businessName, language, thermalPaperWidth } = useAppStore();
+
+  const handlePrint = () => {
+    if (!confirmation) return;
+    printThermalTicket({
+      businessName,
+      tokenCode: confirmation.tokenCode,
+      vehicleTypeName: confirmation.vehicleTypeName,
+      vehicleNumber: confirmation.vehicleNumber,
+      entryTime: confirmation.entryTime,
+      amountPaid: confirmation.amountPaid,
+      paymentMode: confirmation.paymentMode,
+      isMember: confirmation.isMember,
+      language,
+      paperWidth: thermalPaperWidth,
+    });
+  };
+
   return (
     <Dialog open={!!confirmation} onClose={onClose} maxWidth="xs" fullWidth>
       <DialogContent sx={{ textAlign: "center", pt: 4 }}>
@@ -57,7 +79,16 @@ export default function ParkConfirmationDialog({
           </Stack>
         )}
       </DialogContent>
-      <DialogActions sx={{ px: 3, pb: 3 }}>
+      <DialogActions sx={{ px: 3, pb: 3, flexDirection: "column", gap: 1 }}>
+        <Button
+          variant="outlined"
+          fullWidth
+          size="large"
+          startIcon={<PrintIcon />}
+          onClick={handlePrint}
+        >
+          {t("printTicket")}
+        </Button>
         <Button variant="contained" fullWidth size="large" onClick={onClose}>
           {t("done")}
         </Button>

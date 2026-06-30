@@ -8,20 +8,23 @@ import Stack from "@mui/material/Stack";
 import TuneIcon from "@mui/icons-material/Tune";
 import PaymentsIcon from "@mui/icons-material/Payments";
 import TimerIcon from "@mui/icons-material/Timer";
+import PrintIcon from "@mui/icons-material/Print";
 import SheetHandle from "./SheetHandle";
 import { SettingsRow, SettingsSwitchRow } from "./SettingsRow";
 import EditVehicleNumberCaptureSheet from "./EditVehicleNumberCaptureSheet";
 import EditLongStayThresholdSheet from "./EditLongStayThresholdSheet";
+import EditThermalPaperWidthSheet from "./EditThermalPaperWidthSheet";
 import { useAppStore } from "@/lib/store";
 import { BOTTOM_SHEET_PAPER_SX } from "@/lib/sheetStyles";
 
 const PRIMARY = "#00658F";
 
 export default function AdvancedPreferencesSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const { vehicleNumberCaptureMode, collectAtCheckIn, setCollectAtCheckIn, longStayThresholdHours, t } =
+  const { vehicleNumberCaptureMode, collectAtCheckIn, setCollectAtCheckIn, longStayThresholdHours, thermalPaperWidth, t } =
     useAppStore();
   const [editingCapture, setEditingCapture] = useState(false);
   const [editingThreshold, setEditingThreshold] = useState(false);
+  const [editingPaperWidth, setEditingPaperWidth] = useState(false);
 
   return (
     <Drawer anchor="bottom" open={open} onClose={onClose} slotProps={{ paper: { sx: BOTTOM_SHEET_PAPER_SX } }}>
@@ -54,11 +57,19 @@ export default function AdvancedPreferencesSheet({ open, onClose }: { open: bool
             subtitle={`${t("flagVehiclesParkedBeyond")} ${longStayThresholdHours}h`}
             onClick={() => setEditingThreshold(true)}
           />
+          <SettingsRow
+            icon={<PrintIcon />}
+            color={PRIMARY}
+            title={t("thermalPaperWidthTitle")}
+            subtitle={thermalPaperWidth === "58mm" ? t("paperWidth58mm") : t("paperWidth80mm")}
+            onClick={() => setEditingPaperWidth(true)}
+          />
         </Stack>
       </Box>
 
       <EditVehicleNumberCaptureSheet open={editingCapture} onClose={() => setEditingCapture(false)} />
       <EditLongStayThresholdSheet open={editingThreshold} onClose={() => setEditingThreshold(false)} />
+      <EditThermalPaperWidthSheet open={editingPaperWidth} onClose={() => setEditingPaperWidth(false)} />
     </Drawer>
   );
 }

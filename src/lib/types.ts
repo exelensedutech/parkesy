@@ -13,6 +13,8 @@ export interface TeamInvite {
 
 export type VehicleNumberCaptureMode = "full" | "last4";
 
+export type ThermalPaperWidth = "58mm" | "80mm";
+
 export type VehicleTypeName = "Bike" | "Cycle" | "Car";
 
 export interface RateSlab {
