@@ -23,6 +23,23 @@ const EMPTY_6 = ["", "", "", "", "", ""];
 
 type Step = "phone" | "otp" | "password";
 
+declare global {
+  interface Window {
+    initSendOTP?: (configuration: Record<string, unknown>) => void;
+    sendOtp?: (identifier: string, success: (data: unknown) => void, failure: (error: unknown) => void) => void;
+    retryOtp?: (
+      channel: string | null,
+      success: (data: unknown) => void,
+      failure: (error: unknown) => void
+    ) => void;
+    verifyOtp?: (
+      otp: string,
+      success: (data: { message?: string }) => void,
+      failure: (error: unknown) => void
+    ) => void;
+  }
+}
+
 export default function SignupPage() {
   const router = useRouter();
   const { authChecked, isAuthenticated, signup, t } = useAppStore();
@@ -31,9 +48,12 @@ export default function SignupPage() {
   const [phone, setPhone] = useState("");
   const [otp, setOtp] = useState<string[]>(EMPTY_4);
   const [otpError, setOtpError] = useState("");
+  const [phoneError, setPhoneError] = useState("");
   const [resendIn, setResendIn] = useState(RESEND_SECONDS);
   const [hasInvite, setHasInvite] = useState(false);
   const [checkingPhone, setCheckingPhone] = useState(false);
+  const [widgetReady, setWidgetReady] = useState(false);
+  const [verifyingOtp, setVerifyingOtp] = useState(false);
 
   const [password, setPassword] = useState<string[]>(EMPTY_6);
   const [confirmPassword, setConfirmPassword] = useState<string[]>(EMPTY_6);
@@ -52,32 +72,30 @@ export default function SignupPage() {
     return () => clearTimeout(timer);
   }, [step, resendIn]);
 
+  useEffect(() => {
+    const configuration = {
+      widgetId: process.env.NEXT_PUBLIC_MSG91_WIDGET_ID,
+      tokenAuth: process.env.NEXT_PUBLIC_MSG91_TOKEN_AUTH,
+      exposeMethods: true,
+      success: () => {},
+      failure: () => {},
+    };
+    const script = document.createElement("script");
+    script.src = "https://verify.msg91.com/otp-provider.js";
+    script.onload = () => {
+      window.initSendOTP?.(configuration);
+      setWidgetReady(true);
+    };
+    document.body.appendChild(script);
+    return () => {
+      document.body.removeChild(script);
+    };
+  }, []);
+
   const phoneValid = /^\d{10}$/.test(phone);
   const nameValid = name.trim().length > 0;
 
-  const handleSendOtp = async () => {
-    if (!phoneValid || !nameValid || checkingPhone) return;
-    setCheckingPhone(true);
-    const { data } = await supabase.rpc("has_pending_invite", { p_phone: phone });
-    setCheckingPhone(false);
-    setHasInvite(Boolean(data));
-    setOtp(EMPTY_4);
-    setOtpError("");
-    setResendIn(RESEND_SECONDS);
-    setStep("otp");
-  };
-
-  const handleVerifyOtp = async (code: string) => {
-    if (code.length !== 4) return;
-    if (hasInvite) {
-      const { data: matchedRole } = await supabase.rpc("verify_invite_pin", { p_phone: phone, p_pin: code });
-      if (!matchedRole) {
-        setOtpError(t("incorrectPin"));
-        setOtp(EMPTY_4);
-        return;
-      }
-    }
-    // Without an invite, any 4-digit code is accepted for now (no SMS OTP yet).
+  const proceedToPasswordStep = () => {
     setOtpError("");
     setPassword(EMPTY_6);
     setConfirmPassword(EMPTY_6);
@@ -85,9 +103,119 @@ export default function SignupPage() {
     setStep("password");
   };
 
-  const handleCreateAccount = async () => {
+  const handleSendOtp = async () => {
+    if (!phoneValid || !nameValid || checkingPhone) return;
+    setCheckingPhone(true);
+    setPhoneError("");
+    const { data } = await supabase.rpc("has_pending_invite", { p_phone: phone });
+    const invite = Boolean(data);
+    setHasInvite(invite);
+    setOtp(EMPTY_4);
+    setOtpError("");
+
+    if (invite) {
+      setCheckingPhone(false);
+      setResendIn(RESEND_SECONDS);
+      setStep("otp");
+      return;
+    }
+
+    if (!widgetReady || !window.sendOtp) {
+      setCheckingPhone(false);
+      setPhoneError(t("failedToSendOtp"));
+      return;
+    }
+
+    window.sendOtp(
+      `91${phone}`,
+      () => {
+        setCheckingPhone(false);
+        setResendIn(RESEND_SECONDS);
+        setStep("otp");
+      },
+      (error) => {
+        console.error("MSG91 sendOtp failed:", error);
+        setCheckingPhone(false);
+        setPhoneError(t("failedToSendOtp"));
+      }
+    );
+  };
+
+  const handleVerifyOtp = async (code: string) => {
+    if (code.length !== 4 || verifyingOtp) return;
+    setVerifyingOtp(true);
+    if (hasInvite) {
+      const { data: matchedRole } = await supabase.rpc("verify_invite_pin", { p_phone: phone, p_pin: code });
+      setVerifyingOtp(false);
+      if (!matchedRole) {
+        setOtpError(t("incorrectPin"));
+        setOtp(EMPTY_4);
+        return;
+      }
+      proceedToPasswordStep();
+      return;
+    }
+
+    if (!window.verifyOtp) {
+      setVerifyingOtp(false);
+      setOtpError(t("otpVerificationFailed"));
+      setOtp(EMPTY_4);
+      return;
+    }
+
+    window.verifyOtp(
+      code,
+      async (data) => {
+        const accessToken = data?.message;
+        if (!accessToken) {
+          setVerifyingOtp(false);
+          setOtpError(t("otpVerificationFailed"));
+          setOtp(EMPTY_4);
+          return;
+        }
+        try {
+          const res = await fetch("/api/verify-otp", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ accessToken }),
+          });
+          const result = await res.json();
+          setVerifyingOtp(false);
+          if (!result.verified) {
+            setOtpError(t("otpVerificationFailed"));
+            setOtp(EMPTY_4);
+            return;
+          }
+          proceedToPasswordStep();
+        } catch (error) {
+          console.error("verify-otp request failed:", error);
+          setVerifyingOtp(false);
+          setOtpError(t("otpVerificationFailed"));
+          setOtp(EMPTY_4);
+        }
+      },
+      (error) => {
+        console.error("MSG91 verifyOtp failed:", error);
+        setVerifyingOtp(false);
+        setOtpError(t("incorrectOtp"));
+        setOtp(EMPTY_4);
+      }
+    );
+  };
+
+  const handleResendOtp = () => {
+    setResendIn(RESEND_SECONDS);
+    if (hasInvite || !window.retryOtp) return;
+    window.retryOtp(
+      null,
+      () => {},
+      (error) => console.error("MSG91 retryOtp failed:", error)
+    );
+  };
+
+  const handleCreateAccount = async (confirmOverride?: string) => {
     const p = password.join("");
-    const c = confirmPassword.join("");
+    const c = confirmOverride ?? confirmPassword.join("");
     if (p.length !== 6 || c.length !== 6) {
       setPasswordError(t("enterConfirmPassword"));
       return;
@@ -216,6 +344,11 @@ export default function SignupPage() {
                   }}
                   onKeyDown={(e) => e.key === "Enter" && handleSendOtp()}
                 />
+                {phoneError && (
+                  <Typography variant="caption" color="error" align="center">
+                    {phoneError}
+                  </Typography>
+                )}
                 <Button
                   variant="contained"
                   size="large"
@@ -258,6 +391,7 @@ export default function SignupPage() {
                   variant="contained"
                   size="large"
                   fullWidth
+                  disabled={verifyingOtp}
                   onClick={() => handleVerifyOtp(otp.join(""))}
                   sx={{ borderRadius: 6, py: 1.3, fontWeight: 600, boxShadow: "0 6px 16px rgba(0,101,143,0.35)" }}
                 >
@@ -268,7 +402,7 @@ export default function SignupPage() {
                     {resendIn > 0 ? (
                       `${t("resendOtpIn")} ${resendIn}s`
                     ) : (
-                      <Link component="button" onClick={() => setResendIn(RESEND_SECONDS)}>
+                      <Link component="button" onClick={handleResendOtp}>
                         {t("resendOtpLink")}
                       </Link>
                     )}
@@ -292,7 +426,14 @@ export default function SignupPage() {
                   <Typography variant="caption" color="text.secondary" align="center">
                     {t("passwordLabel")}
                   </Typography>
-                  <OtpInput value={password} onChange={setPassword} length={6} />
+                  <OtpInput
+                    value={password}
+                    onChange={(value) => {
+                      setPassword(value);
+                      setPasswordError("");
+                    }}
+                    length={6}
+                  />
                 </Stack>
                 <Stack spacing={1}>
                   <Typography variant="caption" color="text.secondary" align="center">
@@ -300,8 +441,11 @@ export default function SignupPage() {
                   </Typography>
                   <OtpInput
                     value={confirmPassword}
-                    onChange={setConfirmPassword}
-                    onComplete={() => handleCreateAccount()}
+                    onChange={(value) => {
+                      setConfirmPassword(value);
+                      setPasswordError("");
+                    }}
+                    onComplete={(code) => handleCreateAccount(code)}
                     length={6}
                   />
                 </Stack>
@@ -316,7 +460,7 @@ export default function SignupPage() {
                   variant="contained"
                   size="large"
                   fullWidth
-                  onClick={handleCreateAccount}
+                  onClick={() => handleCreateAccount()}
                   sx={{ borderRadius: 6, py: 1.3, fontWeight: 600, boxShadow: "0 6px 16px rgba(0,101,143,0.35)" }}
                 >
                   {t("createAccountBtn")}
