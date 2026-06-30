@@ -56,7 +56,10 @@ export default function ParkPage() {
 
   const parked = sessions
     .filter((s) => s.status === "parked")
-    .filter((s) => s.vehicleNumber.toLowerCase().includes(search.trim().toLowerCase()))
+    .filter((s) => {
+      const q = search.trim().toLowerCase();
+      return !q || s.vehicleNumber.toLowerCase().includes(q) || s.tokenCode.toLowerCase().includes(q);
+    })
     .filter((s) => typeFilter === "all" || s.vehicleTypeId === typeFilter)
     .filter((s) => durationFilter === "any" || durationHours(s.entryTime) >= durationFilter)
     .filter((s) => memberFilter === "all" || (memberFilter === "member" ? Boolean(s.memberId) : !s.memberId))

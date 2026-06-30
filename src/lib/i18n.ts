@@ -285,7 +285,7 @@ const en = {
   // Park page (Check In/Out toggle + Check Out list)
   checkInTab: "Check In",
   checkOutTab: "Check Out",
-  searchByVehicleNumber: "Search by vehicle number",
+  searchByVehicleNumber: "Search by token or vehicle number",
   noParkedVehiclesMatch: "No parked vehicles match your search/filters.",
   parkedAtPrefix: "Parked",
 } as const;
@@ -571,7 +571,7 @@ const ta: Record<TranslationKey, string> = {
 
   checkInTab: "செக் இன்",
   checkOutTab: "செக் அவுட்",
-  searchByVehicleNumber: "வாகன எண் மூலம் தேடு",
+  searchByVehicleNumber: "டோக்கன் அல்லது வாகன எண் மூலம் தேடு",
   noParkedVehiclesMatch: "உங்கள் தேடல்/வடிகட்டிகளுக்கு பொருந்தும் நிறுத்தப்பட்ட வாகனங்கள் இல்லை.",
   parkedAtPrefix: "நிறுத்தப்பட்டது",
 };
